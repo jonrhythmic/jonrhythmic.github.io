@@ -1,0 +1,3967 @@
+<h1>Lessons overview</h1>
+<ul>
+	<li>LESSON 1: SDK</li>
+	<li>LESSON 2: LEGACY CODE</li>
+	<li>LESSON 3: Windows API SDK</li>
+	<li>LESSON 4: Windows API SDK pt. 2</li>
+	<li>LESSON 5: Windows SDK API pt. 3 - WM_PAINT in WndProc</li>
+	<li>LESSON 6: Windows SDK API pt. 4 - WM_PAINT cont.</li>
+	<li>LESSON 7: Fullscreen Application</li>
+	<li>LESSON 8: Initializing OpenGL - Choosing the Pixel Format</li>
+	<li>LESSON 9: Initializing OpenGL pt. 2</li>
+	<li>LESSON 10 - Clipping Area and Viewport</li>
+	<li>LESSON 11 - Doublebuffering and Perspective pt. 1</li>
+	<li>LESSON 12 - Doublebuffering and Perspective pt. 2</li>
+	<li>LESSON 13 - Transformation of Vertices</li>
+	<li>LESSON 14 - Transformation of Vertices pt. 2</li>
+	<li>LESSON 15 - Tranformation of Vertices pt. 3</li>
+	<li>LESSON 16 - glLoadIdentity</li>
+	<li>LESSON 17 - gluLookAt</li>
+	<li>LESSON 18 - Drawing advanced geometry pt. 1</li>
+	<li>LESSON 19 - Drawing advanced geometry pt. 2 (Drawing an incircle)</li>
+	<li>LESSON 20 - Adding individual transformations to objects</li>
+	<li>LESSON 21 - Drawing 3D objects</li>
+	<li>LESSON 22 - Loading an image file as texture</li>
+	<li>LESSON 23 - </li>
+</ul>
+
+<h1>LONGTERM HOPE</h1>
+<p>Write standalone games (targeting 15M NOK :) in an way that it creates a larger game engine or -studio and applications.</p>
+
+<h3>GAN musical synth</h3>
+<p>Give the synth the ability to generate all tones and create patterns of melody from n0..n notes.</p>
+<p>Look at Mel-Frequency Cepstral Coefficients (MFCC) to convert image and audio data, and connect it with OpenCV to map to faces through a camera.</p>
+<p>Implement a way to allow each user to "make" their own music (either a bar or just a melody)</p>
+<p>Track the response to train the model into following queues (based on: mood -> musical needs, ..)</p>
+<p>A multiple languages code editor which uses AI to generate large scale programs and small, usefull snippets based on what people use the editor for.</p>
+
+<h3>Modelview char animation / terrain rigging tool</h3>
+<h3>DLL devops</h3>
+<h3>RPG roguelike tool with ASCII chars</h3>
+
+
+
+
+<h1>LESSON 1: SDK</h1>
+<div id="update"></div>
+
+<table style="width:100%">
+	<caption>Win32 Toolchain</caption>
+	<thead>
+		<tr>
+			<th>Compulsary tools</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td rowspan="5" style="text-align:top">Toolchain &rarr;</td>
+		</tr>
+		<tr>
+			<td>Linker</td>
+		</tr>
+		<tr>
+			<td>Loader</td>
+		</tr>
+		<tr>
+			<td>Compiler</td>
+		</tr>
+		<tr>
+			<td>Assembler, diassembler, debugger</td>
+		</tr>
+		
+	</tbody>
+</table>
+
+<h2>Software Development Kit</h2>
+<label><b>Compulsary</b></label>
+<ol type="1">
+	<li><b>ToolChain</b> &rarr; 
+			<ol>
+				<li><b>Compiler</b> - <span>conversion of human understandable code to machine code</span></li>
+				<li><b>Linker</b> - link with the (OS, custom header) libraries</li>
+				<li><b>Loader</b> (loads exe into the RAM) / Interpreter (converts VM code and loads)</li>
+				<li><b>Assembler, Diassembler,<br/>&nbsp;&nbsp;Debugger</b></li>
+			</ol>
+	</li>
+	<li><b>API LIbraries</b> &rarr; <ol type="1"><li>Procedural Oriented</li> <li>Object Oriented</li></ol></li>
+	<li><b>Documentation</b> &rarr; MSDN</li>
+	<li><b>Header File</b> (C) / <b>Packages</b> (Java) / <b>Namespaces</b> (Cpp) &rarr; Languages packages containing</li>
+</ol>
+<label><b>Optional</b></label>
+<ol type="1" start="5">
+	<li><b>VM</b> (virtual machine) / <b>RE</b> (runtime env. native development)</li>
+	<li><b>IDE</b> - Integrated Development Environment</li>
+</ol>
+
+<b>Hello.cpp</b>
+<p id="note">NOTE: Prints a standard "Hello, World!" program in C.</p>
+<pre><code>
+#include &lt;stdio.h&gt;
+
+int main()
+{
+	printf("Hello, World!");
+	return 0;
+}
+</code></pre>
+
+<img src="hello-world.png" />
+
+<h2>Compiling</h2>
+
+<p><b>Note on compilers:</b> 
+	<a href="https://courses.cs.washington.edu/courses/cse378/97au/help/compilation.html"></a>
+</p>
+
+<p> <!__ This section is stolen, see link below -->
+<img src="https://courses.cs.washington.edu/courses/cse378/97au/help/cc.gif" alt="cc from "https://courses.cs.washington.edu/courses/cse378/97au/help/cc.gif"" />
+<p>
+	First, the C preprocessor cpp expands all those macros definitions and include statements (and anything else that starts with a #) and passes the result to the actual compiler. The preprocessor is not so interesting 
+	because it just replaces some short cuts you used in your code with more code. 
+The output of cpp is just C code; if you didn't have any preprocessor statements in your file, you wouldn't need to run cpp. The preprocessor does not require any knowledge about the target architecture. If you had the 
+correct include files, you could preprocess your C files on a LINUX machine and take the output to the instructional machines and pass that to cc. To see the output of a preprocessed file, use cc -E.
+</p>
+
+<p>
+	The compiler effectively translates preprocessed C code into assembly code, performing various optimizations along the way as well as register allocation. Since a compiler generates assembly code specific to a 
+	particular architecture, you cannot use the assembly output of cc from an Intel Pentium machine on one of the instructional machines (Digital Alpha machines).
+</p>
+
+<p>
+	The assembly code generated by the compilation step is then passed to the assembler which translates it into machine code; the resulting file is called an object file. On the instructional machines, both cc and gcc 
+	use the native assembler as that is provided by UNIX. You could write an assembly language program and pass it directly to as and even to cc (this is what we do in project 2 with sys.s). An object file is a binary 
+	representation of your program. The assembler gives a memory location to each variable and instruction; we will see later that these memory locations are actually represented symbolically or via offsets. It also make 
+	a lists of all the unresolved references that presumably will be defined in other object file or libraries, e.g. printf. A typical object file contains the program text (instructions) and data (constants and strings), 
+	information about instructions and data that depend on absolute addresses, a symbol table of unresolved references, and possibly some debugging information. The UNIX command nm allows you to look at the symbols 
+	(both defined and unresolved) in an object file.
+</p>
+
+<p>
+	Since an object file will be linked with other object files and libraries to produce a program, the assembler cannot assign absolute memory locations to all the instructions and data in a file. Rather, it writes some 
+	notes in the object file about how it assumed things were layed out. It is the job of the linker to use these notes to assign absolute memory locations to everything and resolve any unresolved references. Again, both 
+	cc and gcc on the instructional machines use the native linker, ld. Some compilers chose to have their own linkers, so that optimizations can be performed at link time; one such optimization is that of aligning procedures 
+	on page boundaries. The linker produces a binary executable that can be run from the command interface.
+</p>
+
+<p>
+	Notice that you could invoke each of the above steps by hand. Since it is an annoyance to call each part separately as well as pass the correct flags and files, cc does this for you. For example, you could run the entire 
+	process by hand by invoking /lib/cpp and then cc -S and then /bin/as and finally ld. If you think this is easy, try compiling a simple program in this way.
+</p>
+
+
+<h2>Running a Program</h2>
+<p>
+	When you type a.out at the command line, a whole bunch of things must happen before your program is actually run. The loader magically does these things for you. On UNIX systems, the loader creates a process. This 
+	involves reading the file and creating an address space for the process. Page table entries for the instructions, data and program stack are created and the register set is initialized. Then the loader executes a 
+	jump instruction to the first instruction in the program. This generally causes a page fault and the first page of your instructions is brought into memory. On some systems the loader is a little more interesting. 
+	For example, on systems like Windows NT that provide support for dynamically loaded libraries (DLLs), the loader must resolve references to such libraries similar to the way a linker does.
+</p>
+
+<h2>Memory</h2>
+<p>Figure 2 illustrates a typical layout for program memory. It is the job of the loader to map the program, static data (including globals and strings) and the stack to physical addresses. Notice that the stack is mapped 
+to the high addresses and grows down and the program and data are mapped to the low addresses. The area labeled heap is where the data you allocate via malloc is placed. A call to malloc may use the sbrk system call to add 
+more physical pages to the program's address space (for more information on malloc, free and sbrk, see the man pages).</p>
+<h2>Memory layout</h2>
+
+<img src="https://courses.cs.washington.edu/courses/cse378/97au/help/mem.gif" alt="Memory Stack from "https://courses.cs.washington.edu/courses/cse378/97au/help/mem.gif" />
+<figure>Figure 2: Memory layout.</figure>
+
+<h2>Procedure Call Conventions</h2>
+<p>
+	A call to a procedure is a context switch in your program. Just like any other context switch, some state must be saved by the calling procedure, or caller, so that when the called procedure, or callee, returns the caller may 
+	continue execution without distraction. To enable separate compilation, a compiler must follow a set of rules for use of the registers when calling procedures. This procedure call convention may be different across compilers 
+	(does cc and gcc use the same calling convention?) which is why object files created by one compiler cannot always be linked with that of another compiler.
+	A typical calling convention involves action on the part of the caller and the callee. The caller places the arguments to the callee in some agreed upon place; this place is usually a few registers and the extras are passed 
+	on the stack (the stack pointer may need to be updated). Then the caller saves the value of any registers it will need after the call and jumps to the callee's first instruction. The callee then allocates memory for its stack 
+	frame and saves any registers who's values are guaranteed to be unaltered through a procedure call, e.g. return address. When the callee is ready to return, it places the return value, if any, in a special register and 
+	restores the callee-saved registers. It then pops the stack frame and jumps to the return address.
+</p>
+</p>
+
+
+
+<p>Microsoft Visual Studio Communitys compiler is called <i>cl.exe</i>, and can be invoked through the commandline by calling cl.exe &lt;<i>filename</i>&gt; - where filename is a CSV of sourcefile(s) you are compiling.</p>
+	<b>cl.exe Hello.cpp</b>
+<p>This creates an <i>Hello.obj</i> which is callable by <i>Hello.exe</i>.</p>
+
+<p><b>Hardware</b> - Wrapped in the assembly language in the OS in the first ~4kb memory for the bootloader (BIOS)</p>
+<p><b>Bootloader</b> - the whole brain of the OS</p>
+<p><b>Win32 SDK</b> - MS created a wrapper around C language for native developers (GUI)</p>
+<p><b>MFC - Microsoft Foundation Code</b> - a C++ wrapper for the SDK</p>
+<p><b>Component Object Model</b> - COM is a binary-interface standard for software components</p>
+<p><b>COM+</b> - Is another wrapper for the COM from WinNT mostly implemented into COM with Win2000</p>
+<p><b>JVM / CLR</b> - Java Virtual Machine, .NET (not for driver development)</p>
+
+<p>Web development  - </p>
+
+<p>* If you write something in eg. CLR (.NET) it has to convert the code through each layer below before it's runnable.</p>
+
+<p><b>WinRT</b> - Windows Runtime (launched in 2012 for mobile, nearer to COM, it's around COM+)</p>
+<p><b>Nano-COM</b> (a.k.a XPCOM) ..? </p>
+
+<h2>OpenGL overview</h2>
+<p>Is a spesification by Silicon Group (founder) and Khronos Group (standardization).</p>
+
+<p><b>Fixed Functional Pipeline</b> (eg. ~OpenGL 3.0) - you can't change the pipeline</p>
+
+<p><b>More on legacy OpenGL:</b> doesn't support reading and writing graphical images (PNG, JPG, etc).</p>
+
+<p><b>Programmable Pipeline</b> (eg. Vulcan, modern OpenGL) - you can customize the pipeline</p>
+<ul>
+	<li>Vertex shader (VS) &rarr; Each vertex</li>
+	<li>Tesselation shader (TS) &rarr; Level of details</li>
+	<li>Geometry shader (GS) &rarr; Geometry and instancing</li>
+	<li>Fragment shader (FS) &rarr; Manipulate each pixel</li>
+</ul>
+<p>Eg. Cooking chicken - you add the Chicken (VS) &rarr; Masala (TS) &rarr; Salt (GS) &rarr; Each piece (FS)</p>
+
+
+
+
+<h1>LESSON 2: LEGACY CODE</h1>
+<p>Legacy OpenGL uses the <b>fixed functional pipeline</b> ...</p>
+
+<h2>GLUT</h2>
+<p>GLUT (<i>OpenGL Utility Toolkit</i>) is a deprecated application abstraction layer to render OpenGL code, but it's widely used in older projects.</p>
+
+<h2>Set up freeglut</h2>
+<p>To set up your <a href="https://visualstudio.microsoft.com/downloads/" target="_blank">Visual Studio Community 2019</a> to use <b>freeglut</b> download the library from <a href="https://sourceforge.com/" target="_blank">sourceforge.com</a>,
+extract it in a folder like <b>C:\libraries\freeglut\</b> and add it to your projects settings found under <b>Project &lt;%YOUR_PROJECT_NAME%&gt; Properties</b> on the <i>file menu</i>.</p> 
+<p>You have to tell the compiler you want it to look for external libraries by link the library folder under the settings found under:</p>
+	<b>C/C++ &gt; General &gt; Additional Include Directories</b>
+<p>pointing to the folder where you extracted freeglut and</p>
+	<b>Linker > General > Additional Library Directories </b>.</p>
+
+<h2>Setting SubSystem</h2>
+<p>Remove the commandline window under <b>Linker &gt; System &gt; SubSystem</b> by expanding the menu on the right side and selecting <b>Windows (/SUBSYSTEM:WINDOWS)</b>.</p>
+
+<h2>Setting application main entry point</h2>
+<p>To compile and run this project you have to set the application main entry point found under <b>Project &gt; YOUR_PROJECT_NAME Properties &gt; Linker &gt; Advanced &gt; Entry Point</b> and set it to <b>mainCRTStartup</b>.</p>
+
+<h2>Application Entry Point</h2>
+To remove the <b>LNK2019 unresolved external symbol _WinMain@16 referenced in function "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)</b> 
+error and <b>LNK1120 1 unresolved externals</b> define the application main startup by adding <b>mainCRTStartup</b> under:</p> 
+	<b>Linker &gt; Advanced &gt; Entry Point</b>
+
+<h2>OpenGL coordinate system</h2>
+<p>Screen coordinates { 0.0, 0.0 } is in the upper-left corner on Windows, but in the lower-left corner (<i>anti-clockwise</i>) in OpenGL.</p>
+<p>Indicies are counted from lower left corner, so given a square:</p>
+<pre><code>
+float vertices[] = {
+	-0.5, 	 0.5, 	0.0, 	// 1st - 0		0 +-------+ 3
+	-0.5,	-0.5,	0.0, 	// 2nd - 1		  |	  |
+	 0.5, 	-0.5, 	0.0, 	// 3rd - 2		  |	  | <-- Covers half the screen
+	 0.5, 	-0.5, 	0.0 	// 4th - 3		1 +-------+ 2
+};
+</code></pre>
+
+<pre><code>
+int indices = [3, 2, 1, 3, 1, 0]
+</code></pre>
+
+<p>Will create a square. If you remove <b>3, 2, 1</b> it will be a triangle in the upper right corner etc.</p>
+
+<p>Transform default viewspace to follow windows coordinates with <b>glTranslatef(0.0f, -h, 0.0f)</b>.</p>
+
+<h3>main.cpp</h3>
+<p id="note">NOTE: Full implementation of displaying a colored triangle in the <i>fixed functional pipeline</i> in ~OpenGL3.0 using freeglut.</p>
+
+<p id="note">Take a look at <b>glutEnterGameMode()</b> / <b>glutLeaveGameMode()</b> and <b>glutGameModeString( “990×768:32@75” )</b></p>
+
+<p>** Using the .cpp extension on sourcefile to make Visual Studio recognize it as C++ code to compile C in Cpp.</p>
+
+<pre><code>
+#include &lt;GL/freeglut.h&gt;
+
+void initialize();
+void display(void);
+void resize(int, int);
+void keyboard(unsigned char, int, int);
+void mouse(int, int, int, int);
+
+bool bIsFullscreen = false;
+
+int main(int argc, char* argv[])
+{
+	glutInit(&argc, argv);				// Initialize glut with commandline args
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);	// GLUT_SINGLE single framebuffer instance, show this to the user. GLUT_RGBA is the color schema
+	glutInitWindowSize(800, 600);			// Set the program width and height
+	glutInitWindowPosition(100, 100);		// Position the app from the top left corner
+	glutCreateWindow("C-OpenGL first triangle");	// Create the app window based on the previous params
+	initialize();					// Giving a call to glClear color (glClear takes this call to the framebuffer)
+	glutDisplayFunc(display);			// Display something where you will be rendering everything 
+	glutReshapeFunc(resize);			// Resize the window (unhandled in this project)
+	glutKeyboardFunc(keyboard);			// Callback to the keyboard
+	glutMouseFunc(mouse);				// Callback to the mouse
+	glutMainLoop();					// The program main loop
+
+	return 0;					// ANSI C requires that main function returns an int
+}
+
+void initialize()
+{
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+void display() 
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	// Transform matrix 
+	glMatrixMode(GL_MODELVIEW);			// Set model projection for viewspace
+	glLoadIdentity(); 				// OpenGL follows anti-clockwise positioning (lower left corner is (0.0f, 0.0f))
+
+	// Note on legacy OpenGL code:
+	// All drawcalls ( > OpenGL3.0 ) must be placed inbetween calls to glBegin and glEnd
+	glBegin(GL_TRIANGLES);
+	
+		// Transformation is handled by glLoadIdentity 
+		
+		glColor3f(1.0f, 0.0f, 0.0f); 	// Set the color for vertex[0] to RED
+		glVertex2f(0.0f, 1.0f);		// vertex[0] - top 
+		glColor3f(0.0f, 1.0f, 0.0f);	// Set the color for vertex[1] to BLUE
+		glVertex2f(-1.0f, -1.0f);	// vertex[1] - bottom left
+		glColor3f(0.0f, 0.0f, 1.0f);	// Set the color for vertex[2] to GREEN
+		glVertex2f(1.0f, -1.0f);	// vertex[2] - bottom right
+		
+	glEnd();
+
+	glFlush();	// Single framebuffer, so needs a flush!
+}
+
+// callback function for window resize events
+void resize(int width, int height)
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+}
+
+// callback function for keyboard input
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key) {
+		case 27: // ESC
+			glutLeaveMainLoop();
+			break;
+		case 'f':
+		case 'F':
+			if (bIsFullscreen == false) {
+				glutFullScreen();
+				bIsFullscreen = true;
+			}
+			else {
+				glutLeaveFullScreen();
+				bIsFullscreen = false;
+			}
+			break;
+	}
+}
+
+// callback function for mouse handling
+void mouse(int button, int state, int x, int y)
+{
+	switch (button) {
+		case GLUT_RIGHT_BUTTON:
+			glutLeaveMainLoop();
+			break;
+	}
+}
+</code></pre>
+
+<img src="first-triangle.png" />
+
+
+
+
+<h1>LESSON 3: Windows API SDK</h1>
+<h2>Introduction</h2>
+<p>...</p>
+<p>WinMain is the (C programming) main entrance, where WINAPI is the namespace for the Windows API.</p>
+<p>You have two types of programmers, commandline and Windows OS targeted GUI application developers.</p>
+<p>Linux uses <b>camelCase</b>, but Windows follows <b>hungerian notation</b>.</p>
+
+<h2>Instancing a Windows class</h2>
+<p>In order to create an instance of a Windows application using the Windows API you have to include <b>windows.h</b>, which comes bundled with Windows.</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+
+LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
+
+int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow) {
+	// Declaration for a WIN32 SDK app (first step)
+	WNDCLASSEX wndclass;
+	HWND hwnd; 
+	MSG msg;
+	TCHAR szAppName[] = TEXT( "Win32-API-SDK" );
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;		// Registering to the callback (handles all events)
+	wndclass.hInstance = hInstance;		// Registering the instance for this window
+
+	// Register the class to the OS (second step)	
+	RegisterClassEx(&wndclass);
+	// WND_CLASS = RegisterClass, WND_CLASSEX = RegisterClassEx, also for extra win options
+
+	hwnd = CreateWindow (
+		szAppName,			// Giving the CreateWindow-function your instance classname
+		TEXT("Win32-API-SDK"),		// Caption of the window (titlebar)
+		WS_OVERLAPPEDWINDOW,		// Contains 6 styles - WS_CAPTION, WS_OVERLAPPED, WS_SYSMENU (icon left corner), WS_THICKFRAME, WS_MINIMIZEDBOX, WS_MAXIMIZEDBOX
+		CW_USEDEFAULT,			// Starting X of the window
+		CW_USEDEFAULT,			// Starting Y
+		CW_USEDEFAULT,			// Starting width
+		CW_USEDEFAULT,			// Starting height
+		NULL,				// Do you have a partent window, NULL = OS IS PARENT
+		NULL,				// Any menus; NULL = NO
+		hInstance,			// Current instance of the app
+		NULL				// Used in API hooking, but not much used today
+	);
+	
+	// Event loop goes here
+
+	return 0;
+}
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM)
+{
+
+}
+</code></pre>
+
+<h2>The parameter list in WinMain function</h2>
+<p>HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow</p>
+<p>HINSTANCE hInstance is the an unique id given by the OS to keep track of running status of each instance which the OS keeps track of. </p>
+<p>HINTANCE hPrevInstance is (co-operative multitask, realtime multitask) is kept for backwards compatabilites. Not used because we have a lots of computerpower.</p>
+<p>LPSTR lpCmdLine cmdline args (used later...)</p>
+<p>int iCmdShow ()</p>
+
+<h2>The Window class</h2>
+<p>WNDCLASSEX wndclass; to create an instance of the application.</p>
+<p>HWND hwnd is the unique handle to the window application, and child apps have their separate handle.</p>
+<p>MSG msg; get back to this</p>
+<p>TCHAR szAppName[] = TEXT( "Win32-API-SDK" ); </p>
+<p>wndclass.cbSize = sizeof(WNDCLASSEX); declaring the structure mem size.</p>
+<p>wndclass.style = CS_HREDRAW | CS_VREDRAW; - horizontal and vertical redraw. </p>
+<p>wndclass.cbClsExtra = 0; Extra info about the class, can be used to make circuler windows</p>
+<p>wndclass.cbWndExtra = 0; Extra info about the window</p>
+<p>wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION); win32 api, first param: handle to window (parent window of the app, 0 = OS is parent), second param: IDI_APPLICATION is default app icon.</p> 
+<p>wndclass.hCursor = LoadCursor(NULL, IDC_ARROW); win32 api call, first is parent, 0 = OS, IDC_ARROW is default built in.</p>
+<p>wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH) sets the app background color, GetStockObject returns HBRUSH</p>
+<p>wndclass.lpszClassName = szAppName; binding the app name to the app</p>
+<p>wndclass.lpszMenuName = NULL; Do you need filemenu and more.</p>
+<p>wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION) the icon you see on the taskbar</p>
+<p>wndclass.lpfnWndProc = WndProc;						// Registering to the callback (handles all events)</p>
+<p>wndclass.hInstance = hInstance;						// Registering the instance for this window</p>
+<p>Register the class to the OS (Second step)</p>
+<h2>RegisterClassEx(&wndclass);</h2>
+<p>// WND_CLASS = RegisterClass, WND_CLASSEX = RegisterClassEx, also for extra win options</p>
+
+<h2>CreateWindow function</h2>
+<p>Physical memory address - ALL available memory. OS occupies the start eg. 0 - 440.</p>
+<p>Virtual memory address - your programs memory, physically begins from 440, but is mapped to virtual 0-60</p>
+<p>CreateWindowA - A = ANSI, CreateWindow - Unicode.</p> 
+<p>The paramter list in the CreateWindow takes the following variables (re-write this to explain what the params are!) (and add that: All present parameters in CreateWindow are the same as those found in CREATESTRUCT)</p>
+<pre><code>
+	szAppName,			// Giving the CreateWindow-function your instance classname
+	TEXT("Win32-API-SDK"),		// Caption of the window (titlebar)
+	WS_OVERLAPPEDWINDOW,		// Contains 6 styles - WS_CAPTION, WS_OVERLAPPED, WS_SYSMENU (icon left corner), WS_THICKFRAME, WS_MINIMIZEDBOX, WS_MAXIMIZEDBOX
+	CW_USEDEFAULT,			// Starting X of the window
+	CW_USEDEFAULT,			// Starting Y
+	CW_USEDEFAULT,			// Starting width
+	CW_USEDEFAULT,			// Starting height
+	NULL,				// Do you have a partent window, NULL = OS IS PARENT
+	NULL,				// Any menus; NULL = NO
+	hInstance,			// Current instance of the app
+	NULL				// Used in API hooking, but not much used
+</code></pre>
+
+<h3>Example</h3>
+<p>This is where you point your application handle to the Window class...</p>
+<pre></code>
+hwnd = CreateWindow (
+	szAppName,			// Giving the CreateWindow function your instance classname
+	TEXT("Win32-API-SDK"),		// Titlebar window caption
+	WS_OVERLAPPEDWINDOW,		// Contains 6 styles - WS_CAPTION, WS_OVERLAPPED, WS_SYSMENU (icon left corner), WS_THICKFRAME, WS_MINIMIZEDBOX, WS_MAXIMIZEDBOX
+	CW_USEDEFAULT,			// Starting X of the window
+	CW_USEDEFAULT,			// Starting Y
+	CW_USEDEFAULT,			// Starting width
+	CW_USEDEFAULT,			// Starting height
+	NULL,				// Do you have a partent window, NULL = OS IS PARENT
+	NULL,				// Any menus? NULL = No
+	hInstance,			// Current instance of the app
+	NULL				// Used in API hooking, but not much used
+);
+</code></pre>
+
+
+
+
+<h1>LESSON 4: Windows API SDK pt. 2</h1>
+<h3>ShowWindow</h3>
+<p>After you have defined the class' instance it's time to tell your application to show the application on screen.</p>
+<pre><code>
+ShowWindow(
+	hwnd,				// Send your handle to the ShowWindow
+	SW_NORMAL			// Show Window Normally (see MSDN documentation for further options)
+);
+</code></pre>
+
+<h3>UpdateWindow</h3>
+<p>You then tell your OS to handle all events in your applications handle as events in the form of messages.</p>
+<pre><code>
+UpdateWindow(
+	hwnd				// Give the handle for the window to the OS
+);
+</code></pre>
+
+<h3>The event loop</h3>
+<p>Then you make an event poll to handle you applications user actions. Think of this event loop as 
+the heart of the application, running in an infinite loop while waiting for the users actions, like keyboard input, mousebutton clicks and movement, 
+program focus (minimization / maximization).</p>
+
+<p>WRITE MORE ABOUT THE TranslateMessage and DispatchMessage...</p>
+
+<pre><code>
+// Running the program in an infinite loop (the heart of the application). 
+// Awaits system messages - software or hardware, and directs it to the callback.
+// GetMessage is an API which waits for any message (hardware, keyboard, etc)
+// &msg is a structure containing the information about the event (that has occured)
+// NULL is receive the messages from all child window process' as well (if you want to use this you have to specify it)
+// 0 = message window (start message filter, if larger than 0 it will filter out the first once) eg you type a - b - c, 2 reads from b
+// 0 = as above, end message filter
+while (GetMessage(&msg, NULL, 0, 0)) {
+	TranslateMessage(&msg);		// Translates your msg into it's ASCII key (eg. A = 65) 65V is sent, machine interprets it to an A
+	DispatchMessage(&msg);		// Dispatches the message to the callback function
+}
+
+return ((int)msg.wParam);
+</code></pre>
+
+<h3>Defining the callback function</h3>
+<p>In order for your application to handle events the function GetMessage sends all software and hardware messages to a WinProc...</p>
+<p>WRITE MORE ABOUT HWND, UINT, WPARAM, LPARAM...</p>
+<pre><code>
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg) 
+	{
+		case WM_KEYDOWN:
+			switch (wParam) 
+			{
+				case VK_SPACE:
+					// First TEXT option is caption of message box, second is the the message, MB_OK = what message box. 
+					MessageBox(hwnd, TEXT("My message"), TEXT("My message"), MB_OK);
+					break;
+			}
+			break;
+	}
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+</code></pre>
+
+<p>If you compile and run your application you should see a window with your custom caption, a black background and not much else, like in the image below.</p>
+
+<img src="win32-api-app.png" />
+
+<p>And just like in the previous example using GLUT, you can remove the console window by going into <b>Project &gt; &lt;%YOUR_PROJECT_NAME%&gt; Properties</b> under 
+<b>Linker &gt; System &gt; SubSystem</b> and setting <b>Windows (/SUBSYSTEM:WINDOWS)</b>.</p>
+
+<h3>Configuring Visual Studio Community</h3>
+<p>If you want to compile your project into a spesific folder you can customize your Build Options under <b>&lt;%YOU_PROJECT_NAME%&gt; Properties &gt; General &gt Output Directory</b>. 
+The default setting is <b>$(SolutionDir)$(Platform)\$(Configuration)\</b>, but you can change it to something like <b>$(SolutionDir)\bin\$(ProjectName)</b></p>
+<p>See the <a href="https://docs.microsoft.com/en-us/cpp/build/reference/common-macros-for-build-commands-and-properties?view=msvc-160">MSDN documentation</a>
+on MSBuild Macros for more details.</p>
+
+<h3>Other notes</h3>
+<p>Remember to add tests if the HWND and other functions was created correctly. Eg. if(!CreateWindow() {...}</p>
+<p>Append some notes on <b>#pragma comment(lib, "opengl32.lib");</b> and <b>#define _WINNT_WIN32 0x500</b> + <b>#define WIN32_MEAN_AND_LEAN</b>.</p>
+
+
+
+
+<h1>LESSON 5: Windows SDK API pt. 3 - WM_PAINT in WndProc</h1>
+<h2>Introduction</h2>
+<p>There are two types of rendering - online and offline rendering. Games playing online is rendering on the fly, called <b>Immidiate Mode Rendering</b>.</p>
+
+<p>There is also offline rendering, like pre-rendered assets such as WMV files used in cutscenes. This type of rendering is known as offline rendering.</p>
+
+<h3>Immidiate Mode Rendering</h3>
+
+<p>Immidiate Mode Rendering uses OS spesific type for rendering, so the implementation of it is up to the OS developers and manufactorers of graphics card drivers.</p>
+
+<p>The example below displays text in immidiate mode in a Windows application.</p>
+
+<p>Note that this code goes in the <b>WndProc</b> function, at the top, before the switch-statement.</p>
+<pre><code>
+TCHAR str[255] = L"Hello, World!";					// L"" stands for long char
+HDC hdc;								// Handle to the device context
+RECT rc;								// Handle to the client area
+</code></pre>
+
+<p>This code goes inside the switch-statement</p>
+<pre><code>
+// This is only called by the OS
+// UpdateWindow is the first time WM_PAINT is called 
+// If not defined, it calls the default call
+case WM_PAINT:
+		GetClientRect(hwnd, &rc);				// You are grabbing the physical client area (excluding titlebar, statusbar, etc)
+									// & = passing the address of the rect to the func, paints left, top,right, bottom
+									// MessageBox or anything can't be called from here (program will crash)
+		hdc = GetDC(hwnd);					// DC = Device Context (This is calling the painter, there are many given by the OS)
+		SetBkColor(hdc, RGB(0, 0, 0));				// This is the background color that is printed (black) (painters colorbucket)
+		SetTextColor(hdc, RGB(0, 255, 0)); 			// This is the text color
+		DrawText(hdc, str, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);	// param: the context, the str, the amount of text to print (-1 is all), &rc is where to print, DS_Singleline and rest is where to print (hor, vert)
+		ReleaseDC(hwnd, hdc);					// Release the painter
+		break;
+</code></pre>
+
+<p>If you get a <b>LNK2019</b> error when compiling remember to change SubSystem to WINDOWS.</p>
+
+<h3>OpenGL context</h3>
+<p>OpenGL uses the simple context to paint its context</p>
+<p>Add this to the WndProc</p>
+
+<pre><code>
+TCHAR str[255] = L"Hello, World!";
+HDC hdc;								// Handle to device context
+RECT rc;								// The handle to the client area
+PAINTSTRUCT ps;								// This is a list of brushes (structs of brushes)
+</code></pre>
+
+<pre><code>
+// This is only called by the OS
+case WM_PAINT:
+		GetClientRect(hwnd, &rc);				// You are grabbing the physical client area (excluding titlebar, statusbar, etc)
+									// & = passing the address of the rect to the func, paints left, bottom, right, top
+									// MessageBox or anything can't be called from here (program will crash)
+		hdc = BeginPaint(hwnd, &ps);				// This is the context OpenGL uses
+		SetBkColor(hdc, RGB(0, 0, 0));				// This is the background color that is printed (black) (painters colorbucket)
+		SetTextColor(hdc, RGB(0, 125, 125)); 			// This is the text color
+		DrawText(hdc, str, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);	// the context, the str, the amount of text to print (-1 is all), &rc is where to print, DS_Singleline and rest is where to print (hor, vert)
+		
+		EndPaint(hwnd, &ps);					// This is called to destroy the OpenGL context
+		
+		break;
+</code></pre>
+
+
+
+
+<h1>LESSON 6: Windows SDK API pt. 4 - WM_PAINT cont.</h1>
+<h3>Introduction</h3>
+<p>So far all our requests to do an application window repainting via WM_PAINT has been handled automatically by the OS, but what if there was a need to handle a call to WM_PAINT ourself?</p>
+
+<p><b>Example:</b> The programmer wants to repaint the background of the application window when the user presses R, G, B etc. Each key indicates a color to be set as the new background color of the client area of the window.</p>
+
+<p>Inside the WndProc function you declare an instance of <b>HBRUSH</b> and a <b>static int variable</b> to handle user defined messages to be sent to WM_PAINT.</p>
+
+<pre><code>
+...
+HBRUSH hbrush = NULL;
+static int keyPressed;
+</code></pre>
+
+<p>Below the WM_KEYDOWN case you add another case called <b>WM_CHAR</b>.</p>
+
+<p>Inside there your task is to change the background to the given color based on the users input: G for GREEN, B for BLUE, M for MAGENTA, Y for YELLOW, K for WHITE, W for BLACK, O for ORANGE</p>
+
+<pre><code>
+...
+// Alternative to WM_KEYDOWN (if you need to handle lowercase and capital chars)
+case WM_CHAR:
+	// This handles keyPressed
+	switch (wParam)
+	{
+		case 'r':
+			keyPressed = 1;
+			break;
+		case 'g':
+			keyPressed = 2;
+			break;
+		case 'b':
+			keyPressed = 3;
+			break;
+		case 'm':
+			keyPressed = 4;
+			break;
+		case 'y':
+			keyPressed = 5;
+			break;
+		case 'k':
+			keyPressed = 6;
+			break;
+		case 'w':
+			keyPressed = 7;
+			break;
+		case 'o':
+			keyPressed = 8;
+			break;
+	}
+	
+	// InvalidateRect is a built-in function that calls WM_PAINT for you! 
+	// @param: handle to window, what rectangle to print in (NULL is whole screen), erase whole background?.
+	InvalidateRect(hwnd, NULL, TRUE);  
+	break;
+</code></pre>
+
+<p>Your application will now handle single keyboard inputs and direct them to the <b>InvalidateRect</b> function, which in term calls the WM_PAINT for you.</p>
+
+<p>To process the request of changing the background color you place the following switch-case inbetween the calls to <b>BeginPaint(...)</b> and <b>EndPaint(...)</b> inside WM_PAINT.</p>
+
+<pre><code>
+...
+switch (keyPressed)
+{
+	case 1:
+		hbrush = CreateSolidBrush(RGB(255, 0, 0));
+		break;
+	case 2: 
+		hbrush = CreateSolidBrush(RGB(0, 255, 0));
+		break;
+	case 3: 
+		hbrush = CreateSolidBrush(RGB(0, 0, 255));
+		break;
+	case 4:
+		hbrush = CreateSolidBrush(RGB(255, 0, 255));
+		break;
+	case 5: 
+		hbrush = CreateSolidBrush(RGB(255, 255, 0));
+		break;
+	case 6: 
+		hbrush = CreateSolidBrush(RGB(255, 255, 255));
+		break;
+	case 7:
+		hbrush = CreateSolidBrush(RGB(0, 0, 0));
+		break;
+	case 8: 
+		hbrush = CreateSolidBrush(RGB(255, 165, 0));
+		break;
+}
+FillRect(hdc, &rc, hbrush);
+DeleteObject(hbrush);
+...
+</code></pre>
+
+<h3>Game Loop (basics of the algorithm)</h3>
+<h4>Exmaple: Witcher 3</h4>
+<p>GetMessage API checks all hardware and input events.</p>
+<h4>PSEUDO CODE</h4>
+<pre><code>
+GAME LOOP
+
+while(1)
+{
+	if (ApiWhichChecksTheEvents())
+	{
+		if (msg == WM_QUIT)
+		{
+			// Quit the window
+		}
+		else 
+		{
+			TranslateMessage(...);
+			DispatchMessage(...);
+		}
+	}
+	else 
+	{
+		if (WindowIsActive)
+		{
+			RenderingFunctions();
+		}
+		else
+		{
+			// Do Nothing
+		}
+	}
+}
+</code></pre>
+
+<p id="note"><b>NOTE:</b> If the user continuously holds 'w' to run forward there is a nanosecond pause between each input where the rendering is processed.</p>
+
+
+
+
+<h1>LESSON 7: Fullscreen Application</h1>
+<h3>Introduction</h3>
+<p>To do a fullscreen window we need to remove the WS_OVERLAPPEDWINDOW state to allow the application to cover the entire client area without the application statusbar.</p> 
+
+<p>Before we enter fullscreen we also need to store the windows current position and state, so it can be passed back to the application if it's reset back to window mode.</p>
+
+<p>We write our function to handle the toggeling between window  modes by either declaring a function prototype at the top, or write the function before our <b>main</b>.</p>
+
+<pre><code>
+void toggle_fullscreen(void);
+</code></pre>
+
+<p>We also have to declare variables that stores the data passed to the window on state change, so we declare the following variables in the global namespace:</p>
+
+<pre><code>
+HWND gHwnd;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsFullscreen = false;
+</code></pre>
+
+<p>Instanciate the global window handle (gHwnd) inside the <b>main</b> below <b>CreateWindow</b> as:</p>
+
+<pre><code>
+gHwnd = hwnd;
+</code></pre>
+
+<p>Then we implement the <b>toggle_fullscreen</b> function:</p>
+
+<pre><code>
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+	
+	if (bIsFullscreen == false) {
+		mi.cbSize = { sizeof(MONITORINFO) };
+		dwStyle = GetWindowLong(gHwnd, GWL_STYLE); // GetWindowLong retrieves the style (or other info) of the specified window
+
+		// If dwStyle (bitwise) and WS_OVERLAPPEDWINDOW is true... (both contains WS_OVERLAPPEDWINDOW)
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			// Retrieves the show state and the restored, minimized, and maximized positions of the specified window
+			bIsWindowPlacement = GetWindowPlacement(gHwnd, &wpPrev);	// GetWindowPlacement retreives the position of current active window
+			hMonitor = MonitorFromWindow(gHwnd, MONITORINFOF_PRIMARY);	// Tell the OS to give the handle to the (primary) monitor the graphicscard is connected to
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);	
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				// This function changes an attribute of the specified window
+				SetWindowLong(gHwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);	// Remove the WS_OVERLAPPEDWINDOW state
+				SetWindowPos(gHwnd, HWND_TOP,						// Assign the monitor coords to the SetWindowPos
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		// Returns the previous version of the window
+		SetWindowLong(gHwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(gHwnd, &wpPrev);
+		SetWindowPos(gHwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+<p>Lastly we handle switching between fullscreen mode in the <b>WM_KEYDOWN</b> inside our <b>WinProc</b>:</p>
+
+<pre><code>
+...
+case 'f':
+case 'F':
+	toggle_fullscreen();
+	break;
+}
+...
+</code></pre>
+
+<p>This example switches modes when the user presses <b>f</b> or <b>F</b>, but in most cases this would be done when the user presses <b>alt + enter</b>.</p>
+
+<pre><code>
+case WM_SYSKEYDOWN:
+	// Toggle between fullscreen and window mode
+	if (HIWORD(lParam) && KF_ALTDOWN) {
+		if (LOWORD(wParam) == VK_RETURN) {
+			toggle_fullscreen();
+		}
+	}
+</code></pre>
+
+<p id="note"><b>NOTE:</b> The above code gives a <i>Windows Default Sound</i> when switching in and out of fullscreen using the key command <b>alt+enter</b>, so as an exercise try to implement the resizing in <b>WM_SYSCHAR</b>, or use an <b>Keyboard Accelerator</b>.</p>
+<p>Keyboard Accelerator sends their result to <b>WM_COMMAND</b> or <b>WM_SYSCOMMAND</b>, so see if any of those fixes the bug. (Both are wrong, WM_COMMAND is for IDOK or IDD_MENUITEMS, and WM_SYSCOMMAND handles SC_SCREENSAVER and SC_MONITORPOWER)</p>
+<p>The (probably) correct solution is to use <b>WM_SYSKEYDOWN</b> since that is for system keys like F10 or ALT. Test with InitCommonControlsEx and adding Bits 29 in WM_SYSKEYDOWN to see if that solves it!</p>
+
+
+
+
+<h1>LESSON 8: Initializing OpenGL - Choosing the Pixel Format</h1>
+<h3>Introduction</h3>
+<p>OpenGL consists of two states, first state is the initialization part and the second one is the updating part.</p> 
+
+<p><b>ChoosePixelFormat()</b>, <b>SetPixelFormat()</b> are both done on the OS side and gives you a <b>Device Context (HDC)</b>.</p>
+
+<p><b>wglCreateContext()</b>, <b>wglMakeCurrent()</b> gives the <b>Device Context (g_hdc)</b> to the GPU, which gives you the <b>Rendering Context (HGLRC)</b>. We need to include the windows library and the OpenGL library to
+be able to work with <b>win32</b> and using the <b>Wiggle</b> library functions.</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+
+int initialize();				// Function prototype
+
+HWND g_hwnd;					// Global Handle
+HDC g_hdc = NULL;				// Device Context
+HGLRC g_hrc = NULL;				// Rendering Context
+</code></pre>
+
+<p>Remember to initialize the global handle <b>(g_hwnd)</b> to the <b>hwnd</b> inside the <b>WinMain</b> by adding:</p>
+
+<pre><code>
+g_hwnd = hwnd
+</code></pre>
+
+<p>We implement the initialization of OpenGL in the newly created <b>initialize</b> function:</p>
+
+<pre><code>
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;						// Decribes the pixelformat to use while rendering
+	// LAYERPLANEDESCRIPTOR lpd;						// Contains the palette for- and background layers 
+	int iPixelFormatIndex;							// The index given by the OS
+	// int iLayerPlane;							// Initialize similar to PIXELFORMATDESCRIPTOR
+	
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));			// Giving the pixelformat descriptor to the system (what pixel format you are using)
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);				// Size of the pfd structure to the PIXELFORMAT (init the structure)
+	pfd.nVersion = 1;							// When you are dealing with an OS its doesn't give the newest OGL, but your graphics card driver does! 
+										// This gives the basic version, then it gets replaced by the newest version (driver implementation)
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;			// Tell the draw to the window or device surface, and that it supports using OpenGL
+	pfd.iPixelType = PFD_TYPE_RGBA;						// The pixeltypes should be red, green, blue, alpha
+	pfd.cColorBits = 32;							// The highest number of color bitplanes for each color buffer (8 * 4 = 32)
+	pfd.cRedBits = 8;							// 8 bits red channel	(flexiblity to change the color type)
+	pfd.cGreenBits = 8;							// 8 bits green	channel (if one is large the color gets higher presidents)
+	pfd.cBlueBits = 8;							// 8 bits blue channel
+	pfd.cAlphaBits = 8;							// 8 bits alpha channel
+	// pfd.bReserved							// Specifies the number of overlay and underlay planes.
+	// Bits 0 through 3 specify up to 15 overlay planes and bits 4 through 7 specify up to 15 underlay planes.
+	// Layers need a call to BOOL wglRealizeLayerPalette(HDC hdc, int iLayerPlane, BOOL bRealize); before use...
+	
+	g_hdc = GetDC(g_hwnd);							// Gets the Device Context of the OS
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);			// Tell the OS the give pixelformat with the assigned vars (gives the index of the pixelformat)
+										// It might give you the approximate of the declared vars / desired format
+
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	// Give the PixelFormat struct data to my device context
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {	
+		return -2;
+	}
+	
+	// iLayerPlane = wglDescribeLayerPlane(g_hdc, iPixelFormatIndex, iLayerPlane, sizeof(LAYERPLANEDESCRIPTOR), &lpd);
+	// if (iLayerPlane == FALSE) {
+	// 		return errno;
+	// }
+	// if (wglDescribeLayerPlane ( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nBytes, LPLAYERPLANEDESCRIPTOR plpd ) {
+	// }
+
+	// wgl (Wiggle) operates as a brigde between the OS (CPU side) and OpenGL (GPU side)
+	g_hrc = wglCreateContext(g_hdc);					// I want a rendering context like g_hdc, given to g_hrc (which happens on the GPU side using the wgl))
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	// Make the current context as g_hrc (rendering context)
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+}
+</code></pre>
+
+<p>Then we implement a game loop to handle the OS messages and OpenGL rendering inside <b>WinMain</b>:</p>
+
+<pre><code>
+bool bIsRunning = true;
+
+while (bIsRunning == true) {
+	// PeekMessage doesn't wait for messages - if there is no messages it will run the else-clause.
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		if (msg.message == WM_QUIT) {
+			bIsRunning = false;
+		}
+		else {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+	else {
+		// Handle your rendering context here!
+	}
+}
+</code></pre>
+
+
+
+
+<h1>LESSON 9: Initializing OpenGL pt. 2</h1>
+<h3>Introduction</h3>
+<p>To finish the <b>initialize()</b> function we simply add:</p> 
+
+<pre><code>
+glClearColor(0.0f, 0.0f, 1.0f, 1.0f);	// Clears the buffer with this value
+
+return 0;
+</code></pre>
+
+<p>It's time to create a remaining functions to setup an instance of OpenGL. First declare the function prototypes globally:</p> 
+
+<pre><code>
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+</code></pre>
+
+<p>We only add a basic implementation of each function, but this will in the end give a working application displaying a white triangle.</p> 
+<p id="note"><b>NOTE:</b> only works using Nvidia, AMD needs to add a shader (Is this true for legacy OGL?)). </p> 
+
+<p>First we add the function to resize the viewport of our application.</p>
+
+<pre><code>
+void resize(int w, int h)
+{
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+}
+</code></pre>
+
+<p>Our rendering loop (here displaying legacy OpenGL) is only clearing the screen to the color variable that was set in the <b>initialize()</b> with <b>glClearColor()</b> and adding a simple triangle. Notice that we use 
+<b>glFlush()</b> since this program is currently using a <b>singlebuffer</b>.</p> 
+
+<pre><code>
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);				// Takes the latest value from glClearColor and clear the buffers with that
+
+	// Rendering is added here
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 1.0f);
+		glVertex2f(-1.0f, -1.0f);
+		glVertex2f(1.0f, -1.0f);
+	glEnd();
+
+	glFlush();						// This is needed in a singlebuffer program (it flushed the buffer between each interation)
+}	
+</code></pre>
+
+<p>It is also good practise to clean up the initialization once we are done (user quits the program), so there wount be any resouces tide up.</p>
+
+<pre><code>
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		// This code is identical to the code in toggle_fullscreen()
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+</code></pre>
+
+<p>Then in the <b>WinMain</b> you can remove the <b>UpdateWindow</b> and add the following code to do the OpenGL initialization. Note that the call to <b>initialize</b> has to come after initializing the global handle (<b>g_hwnd</b>).</p> 
+
+<pre><code>
+// UpdateWindow(hwnd);					// This is called by the OS automatically
+
+g_hwnd = hwnd;
+int result = initialize();
+</code></pre>
+
+<p>Then it's time to add the new functions to the <b>WinProc</b>. Remove the declarations in the <b>WinProc</b> and the code in the <b>WM_PAINT</b> and add the following code to the <b>switch(uMsg)</b>-statement:</p> 
+
+<pre><code>
+// This is only called by the OS (first when the window is created)
+case WM_PAINT:	
+	display();					// This is used in a singlebuffer program (This will not update the window each frame - instead place the display call in the game loops else-clause!)
+	break;
+case WM_SIZE:
+	resize(LOWORD(lParam), HIWORD(lParam));		// This takes the care by the OS and takes the LOWORD and HIWORD values of the screensize (Rewrite this into an understandable sentence)
+	break;
+case WM_DESTROY:
+	uninitialize();
+	PostQuitMessage(0);
+	break;
+</code></pre>
+
+<p>If you haven't added opengl32.lib under <b>Linker &gt; Input &gt; Additional Dependencies</b> you can add this line at the top below your <b>#include</b> declarations:</p> 
+
+<pre><code>
+#pragma comment(lib, "opengl32.lib")
+</code></pre>
+
+<p>Now compile and run your program to see a white triangle on a blue background. (Again note that this will only work on a computer with an Nvidia card!)</p>
+
+<p>Comparing the creation of an application window to the earlier version using <b>freeglut</b> we see the similarilies in the comments in the sourcecode below.</p>
+
+<pre><code>
+glutInit(&argc, argv);				// Calls WinMain internally
+glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);	// Calls the PFD struct internally
+glutInitWindowSize(800, 600);			// Calls CreateWindow internally
+glutInitWindowPosition(100, 100);		// Also mapped to CreateWindow
+glutCreateWindow("C-OpenGL first triangle");	// Also mapped to CreateWindow
+initialize();					// Gives a call to glClear color (glClear takes this call to the framebuffer)
+glutDisplayFunc(display);			// else-part of the messageloop
+glutReshapeFunc(resize);			// Similar to WM_SIZE
+glutKeyboardFunc(keyboard);			// Similar to WM_KEYDOWN
+glutMouseFunc(mouse);				// ...
+glutMainLoop();					// Handles the main game loop 
+</code></pre>
+
+<p>Here is the cleaned up sourcecode of a win32 application running OpenGL:</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;	
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow) 
+{
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;	
+	wndclass.hInstance = hInstance;	
+		
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			// Whatever you want to render - do it here!
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_PAINT:
+		display();
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+	
+	g_hdc = GetDC(g_hwnd);
+	
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {	
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+	
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 1.0f);
+		glVertex2f(-1.0f, -1.0f);
+		glVertex2f(1.0f, -1.0f);
+	glEnd();
+
+	glFlush();
+}	
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+<p id="note">Fra Innføring i grafikk programmering: <br/>
+<b>GL_MODELVIEW</b> matrisen beskriver retning og hvor kameraet er: transformerer fra <i>object space</i> til <i>eye space</i>.<br/><br/>
+<b>GL_PROJECTION</b> matrisen beskriver hvordan kameraet ser (”linsen”)
+transformerer mellom <i>eye space</i> og <i>clip space</i><p>
+
+
+
+<h1>LESSON 10 - Clipping Area and Viewport</h1>
+
+<h3>Introduction</h3>
+<p><b>Clipping Area</b> refers to the area that can be seen (ie. captured by the camera), measured in OpenGL coordinates, and is define as { <b>-1, -1</b> }, { <b>1, 1</b> }. In OpenGL coordinates { <b>0, 0</b> } is center of the screen.</p>
+
+<p><b>Viewport</b> refers to the display area on the window (screen), which is measured in pixels in screen coordinates (excluding the title bar).</p>
+
+<p>A viewport is where the rendering will occure, and in that particular viewport our screenspace will be shown. If your native resolution is 1920x1080, your viewport defines the drawing size of the graphics to be displayed in the given screensize.</p>
+
+<p>Framebuffer is a space in the VRAM where the final viewport is stored. You can create your own, even multiple, framebuffer(s) as needed.</p>
+
+<p>Objects will distorted if the aspect ratio of the clipping area and viewport is different.</p> 
+
+<p>OpenGL defines it's viewport using <b>glViewport(x, y, width, height)</b>, where the starting <b>x</b> and <b>y</b> - <b>{ 0, 0 }</b> - is in the lower left corner, up to <b>{ width * height }</b> in the upper right corner.</p>
+
+<p>To define a viewport you have to declare a <b>width</b> and a <b>height</b> variable (just put in it in the global space for now)</p>
+
+<pre><code>
+int width;
+int height;
+</code></pre>
+
+<p>You also have to store the <b>width</b> and <b>height</b> variables in the <b>WM_SIZE</b> so you can manipulate the viewport with it:</p>
+
+<pre><code>
+case WM_SIZE:
+	...
+	width = LOWORD(lParam);
+	height = HIWORD(lParam);
+	break;
+</code></pre>
+
+<p>This example edits the viewport to draw your triangle in certain parts of the screen. Shift what screenspace to draw the triangle from the previous lesson in by using the numpad keys (or the numbers keys).</p>
+
+<pre></code>
+* Numpad0 should draw the triangle on the entire screen (like in the previous lesson)
+* Numpad1 should draw the triangle in the lower left corner, covering only 1/4 of the screen
+* Numpad2 should draw the triangle in the lower right corner, covering 1/4 of the screen
+* Numpad3 should draw the triangle in the upper left corner, covering 1/4 of the screen
+* Numpad4 should draw the triangle in the upper right corner, covering 1/4 of the screen
+* Numpad5 should draw the triangle on the right side of the screen, covering the entire right half
+* Numpad6 should draw the triangle on the left side of the screen, covering the entire left half
+* Numpad7 should draw the triangle on the upper side, covering the entire upper half
+* Numpad8 should draw the triangle on the lower side, covering the entire lower half
+* Numpad9 should draw the triangle in the center of the viewport, covering 1/4 of the screen
+</code></pre>
+
+<p>Place this code in the <b>WM_KEYDOWN</b>:</p>
+
+<pre><code>
+case WM_KEYDOWN:
+	switch (wParam)
+	{
+	case VK_NUMPAD0:
+		// Full screen
+		glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+		break;
+	case VK_NUMPAD1:
+		// Lower left corner
+		glViewport(0, 0, (GLsizei)width / 2, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD2: 
+		// Lower right corner
+		glViewport((GLsizei)width / 2, 0, (GLsizei)width / 2, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD3:
+		// Upper left corner
+		glViewport(0, (GLsizei)height / 2, (GLsizei)width / 2, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD4:
+		// Upper right corner
+		glViewport((GLsizei)width / 2, (GLsizei)height / 2, (GLsizei)width / 2, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD5:
+		// Whole right side
+		glViewport((GLsizei)width / 2, 0, (GLsizei)width / 2, (GLsizei)height);
+		break;
+	case VK_NUMPAD6:
+		// Whole left side
+		glViewport(0, 0, (GLsizei)width / 2, (GLsizei)height);
+		break;
+	case VK_NUMPAD7:
+		// Whole upper half
+		glViewport(0, (GLsizei)height / 2, (GLsizei)width, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD8:
+		// Whole lower half
+		glViewport(0, 0, (GLsizei)width, (GLsizei)height / 2);
+		break;
+	case VK_NUMPAD9:
+		// Centered
+		glViewport((GLsizei)width / 4, (GLsizei)height / 4, (GLsizei)width / 2, (GLsizei)height / 2);
+		break;
+	}
+	break;
+</code></pre>
+
+<p id="note"><b>NOTE:</b> If you are adding this code to the previous example you'll get an error in the <b>WM_KEYDOWN</b> case for toggeling fullscreen because <b>VK_NUMPAD6</b> has the same ASCII symbol value as the letter <b>f</b>.</p>
+
+
+
+
+<h1>LESSON 11 - Doublebuffering and Perspective pt. 1</h1>
+<h3>Introduction</h3>
+<p>This example will demonstrate how to center the window on startup and how to add doublebuffering to your application.</p>
+
+<p>Up to OGL 3.0 the common way to do projected rendering was using the <b>OpenGL Utility (GLU) library</b>, setting the worldspace / modelspace with <b>gluPerspective</b> and eyespace with <b>gluLookAt</b></p>
+
+<p id="note"><b>NOTE:</b> This has been deprecated in in the modern pipeline starting from OGL 3.0 and removed entirely from OGL 3.1.</p>
+
+<p>Start by including the header file:</b>
+<pre><code>
+...
+#include &lt;GL/glu.h&gt;
+...
+</code></pre>
+
+<p>Now we can define the metric' of the window positioning at start up by adding these variables to your <b>WinMain</b> after <b>RegisterClassEx</b>:</p>
+
+<pre><code>
+...
+// Window dimensions
+int sWindowWidth = 800;
+int sWindowHeight = 600;
+int x = 0;
+int y = 0;
+int monitorHalfWidth = 0;
+int monitorHalfHeight = 0;
+
+int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+// Centering the starting point
+monitorHalfWidth = monitorWidth / 2;
+monitorHalfHeight = monitorHeight / 2;
+// Starting point
+x = monitorHalfWidth - sWindowWidth / 2;
+y = monitorHalfHeight - sWindowHeight / 2;
+...
+</code></pre>
+
+<p id="note"><b>NOTE:</b> Try rewriting these variables using the <b>CREATESTRUCT</b> struct found in <b>windows.h</b></p>
+
+<p>Then replace the <b>CW_USEDEFAULT</b> calls in <b>CreateWindow</b> by:</p>
+
+<pre><code>
+...
+x,
+y,
+sWindowWidth,
+sWindowHeight,
+...
+</code></pre>
+
+<p>Go to your <b>initialize</b> function and append the <b>PFD_DOUBLEBUFFER</b> command to the <b>pfd.dwFlags</b></p>
+
+<pre><code>
+...
+pfd.dwFlags = <b> ... | PFD_DOUBLEBUFFER</b>
+...
+</code></pre>
+
+<p>Now you don't need <b>SW_PAINT</b> in your <b>WinProc</b>, but instead the draw calls will come from <b>display()</b>, once you added it to the main rendering loops <b>else</b> condition.</p>
+
+<p>Remember to add an initial call to <b>resize()</b> at the end of <b>initialize()</b> so the projection is draw to screen.</p>
+
+<p>Next we modify the <b>resize()</b> to handle our new projection based rendring, so we begin by ensuring that the projection isn't divided by 0:</p>
+
+<pre><code>
+...
+if (h == 0) {
+	h = 1;
+}
+...
+</code></pre>
+
+<p>Below the call to <b>glViewport</b> set the model projection, translate the view to it's identity matrix and add the viewport using <b>gluPerspective</b>: </p>
+
+<pre><code>
+...
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+
+gluPerspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+...
+</code></pre>
+
+<p id="note"><b>NOTE:</b> Setting the <b>gluPerspective()'</b> <b>zNear</b> could significantly improve the depth calculations.</p>
+
+<p id="note"><b>NOTE 2:</b> When the perspective is set (eg. 0.1f, 100.0f) your z-axis' (eg. glVertex3f) needs to be bigger than the zNear-value for <b>gluPerspective</b> to draw it to the screen!</p> 
+
+
+<p>When your application is doublebuffering there's no need to flush the <b>display()</b>, since the back- and front buffers will automatically swap and start rendering the next frame (offscreen), once that's ready.</p>
+
+<p>Replace <b>glFlush()</b> with the <b>wingdi.h</b> built in function <b>SwapBuffers</b>, which takes the rendering context (<b>g_hdc</b>) as a single param.</p>
+
+<pre><code>
+SwapBuffers(g_hdc);
+</code></pre>
+
+<p>And now your windows start up position is in the middle of the screen (minus the size of the application system bar).</p>
+<pre><code>
+<p>The gluPrespective() transformation of view... (This needs some improvement)</p>
+- Local Coordinate System &rarr; World Coordinate System &rarr; View Coordinate System
+- Adds the frustum in the Clip Coordinate System, which is turned into <b>Normalized Device Coordinate</b> System as rendered on the screen in the <b>viewport</b> seen at the 2D window.</p>
+</code></pre>
+
+
+
+
+<h1>LESSON 12 - Doublebuffering and Perspective pt. 2</h1>
+<h3>Introduction</h3>
+<p>When you compile a program it goes through a <b>linker</b>, <b>compiler</b> and an <b>assembly</b> stage, then your OS can load the application from your <b>harddisk</b> into your <b>random access memory (RAM)</b> and <b>execute</b> it.</p>
+
+<p>The OS will also load the VRAM on the GPU (sending framebuffers etc). Each vertices on the GPU is display by phosphorus getting ignited in your screen.</p>
+
+<h3>What is a framebuffer</h3>
+<p>Stored in the <b>VRAM</b> on the <b>GPU</b> and holds state of the <b>color-</b>, <b>depth-</b>, <b>stencil-</b> and <b>accumelator buffers</b>.</p>
+
+<p>Lets add our affine body transformations into your <b>display()</b> function:</p>
+
+<pre></code>
+// Positional transformation
+glTranslatef(0.0f, 0.0f, -3.0f);
+
+// Rotation transformation
+glRotatef(translationValue, 1.0f, 1.0f, 0.0f);	// When all axis' are present it's an arbitrary rotation
+	
+// Shear transformation
+glScalef(0.2f, 0.2f, 0.2f);	 		// Scales the model in view to 0.2
+
+// All these are in the model transformation (Translation * Rotation * Shearing)
+</code></pre>
+
+<p>This example video explains the process in details: <a href="https://www.youtube.com/watch?v=q5jOLztcvsM" target="_blank">https://www.youtube.com/watch?v=q5jOLztcvsM</a>
+
+
+
+
+<h1>LESSON 13 - Transformation of Vertices</h1>
+<h3>Introduction</h3>
+<p>Once your program is conpiled succesfully it's located on your harddrive, and when you run it it gets loaded into the RAM.</p>
+
+<p>Once it's in the RAM it needs to call some graphics device (GPU). Your OS will call the device driver (controlling the GPU), which allocate the GPUs VRAM.</p>
+
+<p>The VRAM then maps the rendering content to the screen.</p>
+
+<h3>Fixed Functional Pipeline</h3>
+<p>You pass the vertex data (as vertices) and your color data into the fixed functional pipeline.</p>
+
+<p>The fixed functional pipeline doesn't give you any control over the pipeline, you only send your data to the fixed functional pipeline. A programmable pipeline contains "holes" for VS, TS, GS and FS, which can be customized by the user. </p>
+
+<p><b>Projection</b> is used to set up the viewport and clipping boundry, while <b>modelview</b> is used to rotate, translate and scale objects quickly.</p>
+
+<p>The vertices inside <b>glBegin()</b> and <b>glEnd()</b> is considered (interpreted as) an array (in local space). Using the <b>glTranslatef()</b> your displayed object is multiplied by the transformation matrix, given that <b>glMatrixMode(GL_MODELVIEW)</b> is set.</p>
+
+<p>The order of inputs matters: <b>translate</b>, <b>rotate</b> then <b>scale</b>.</p>
+
+<p>When you call GL_MODELVIEW your put the cursor in the center in the local space.</p>
+
+<h3>Details</h3>
+<p>Position gets multiplied by the transform matrix, and we call this <b>World Space Coordinates</b>.</p>
+
+<p><b>World Space Coordinates</b> gets multiplied by the <b>ViewMatrix</b> and we call this the <b>Eye Space Coordinates</b>.</p>
+
+
+<p id="note"><b>Golden rule in OpenGL:</b> If you don't implement any camera OGL assignes the camera at <b>{ 0, 0, 0 }</b>.</p>
+
+<h3>Why Matrices</h3>
+<p>Matrices are the easiest way to represent three dimensional values.</p>
+
+<p>Your <b>Eye Coordinates</b> gets multiplied by your perspective / orthographics view and we call this the <b>Clip Coordinates</b>.</p>
+
+<pre><code>
+Local Coordinates &rarr; World Coordinates &rarr; Eye Space Coordinates &rarr; Clip Coordinates
+</code></pre>
+
+
+
+
+<h1>LESSON 14 - Transformation of Vertices pt. 2</h1>
+<h3>Introduction</h3>
+
+<p>Here is a recap of how the <b>Fixed Functional Pipeline</b> works in each stage:</p>
+
+<pre><code>
+1. <b>Vertex Specification Stage</b>
+	a) Vertex Data &rarr; Vertices
+		a) Transformation &rarr; MODEL_TRANSFORMATION
+			There are three types of transformation in OpenGL 
+				1) Position Transformation
+				2) Rotation Transformation
+				3) Sheer Transformation
+			Everything in OpenGL is in the form of Matrix. 
+			
+			a) Local Coordinates gets converted to World Space Coordinates
+				&rarr; Vertices gets multiplied by the transformation functions (glTranslatef, glRotatef, glScalef)
+			
+		VIEW TRANSFORMATION 
+		&rarr; Camera Matrix
+		
+		(MODEL - VIEW DUALITY) &rarr; Model * View Matrix
+		
+		Now ModelView Matrix (Eye Space) gets multiplied by the projection Matrix and we call it Clip Space
+		
+	b) Primitive Assembly &rarr; What gemometry gets rendered?
+		(GL_TRIANGLES)
+		
+	c) Clipping
+		Viewport clipping
+
+	d) Perspective Divide &rarr; Here all the vertices are divided by the w component (we are converting from homogenous to cartesian)
+		NDC coordinates which are mapped to the screen
+
+	e) Viewport Transform &rarr; All your things get rendered into that viewport
+		All the things gets rendered into the viewport
+
+	f) Face Culling
+		You are rendering triangles (not showing the backface)
+		
+2. <b>Pixel Specification Stage</b>
+	a) Pixel Data &rarr; color, Textures, Light, Images
+	
+		Per Pixel operations and unpacking
+	
+		Texture Assembly &rarr; On which geomery should I render the image?
+	
+3. <b>Rasterization</b> &rarr; Creates the potential Pixel
+	
+4. <b>Per Fragment Tests</b>
+	a) Pixel Ownership &rarr; Done by OpenGL automatically
+	b) Scissor Test &rarr; Done by OpenGL automatically
+	c) Alpha Test &rarr; Done by you (You have to enable it)
+	d) Depth Test &rarr; Done by you (You have to enable it)
+	e) Stencil Test &rarr; Done by you (You have to enable it)
+	f) Blending &rarr; Done by OpenGL and you both
+	g) Dithering &rarr; Done by OpenGL
+	h) Logic Operation &rarr; Done by OpenGL
+</code></pre>
+
+<pre><code>	
+1. Pre-processing of vertices (raw vertices)
+2, Processing of vertices
+    1. Transformation
+	    The vertices are in the local space
+		Here the transform to Local Space &rarr; World Space (Model Transform)
+		If you add any camera or by defailt gives you the camera in the center
+		World Space Coordinates gets mulitplied to the view Matrix this is known as Eye Space
+		Eye Space is transformed to Clip Space.
+3. Post processing
+	Primitive Assembly (GL_TRIANGLES)
+	Clipping &rarr; Viewport clipping
+	Perspective Divide &rarr; NDC Coordinates which are mapped to the screen
+	Viewport Transform &rarr; All the things get rendered into that viewport.
+	Face Culling &rarr; (You are rendering a triangle (not showing the back), this called face culling)
+</code></pre>
+
+<h3>Cartesian Coordinate System</h3>
+<p>
+[2, 7] &rarr; Cartesian Coordinate System
+[2, 7, 0] &rarr; Homogenous
+
+Conversion  from homogenious to Cartesian is such as 
+2/0, 7/0 &rarr; this represents inifinity.
+2/1, 7/1 &rarr; 
+</p>
+
+
+
+
+
+<h1>LESSON 15 - Tranformation of Vertices pt. 3</h1>
+<p>Vertex &rarr; (World Space) Multiplied by Tranformation, Rotate and Scale (order matters!) &rarr; Multiplied by camera coordinates (Eye coordinates) &rarr; Eye space gets multiplied by 
+(Clipping plane) &rarr; Primitive Assembly &rarr; Clipping (different from Culling). Viewport clipping happens first (removes (culled!) all vertices outside of the viewport). Perspective divide 
+(w-component of clipspace by NDC(Normalized Device Coordinates).). Then face culling happens (FACE_CULLING). Frustrum culling. Raterization will convert the geometry 
+to potiential pixel (maps your 3D space into 2D), but we have almost no control over it.</p>
+
+<p>View tests are performed (pixelownership tests, scissor tests (what lies inside the screenview), transformation test, alpha tests, depth tests, stencil tests (shadows and more), blending test, dithering test and 
+logical test) and each pixel that passes those tests are rendered to the framebuffer.</p>
+
+<p>After that it's render to the framebuffer</p>
+
+<p>Fra NITH mappa Innføring i grafikk programmering: Vertexes are defined in <i>object space</i>. A coordinate system for all objects is in <i>world space</i>. Camera coodinates is called <i>eye space</i>.</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL |	PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslatef(0.0f, 0.0f, -3.0f);
+	glRotatef(-75.0f, 1.0f, 0.0f, 0.0f);
+	
+	glLineWidth(1.0f);
+
+	// Horizontal bars
+	float x1 = -2.0f;
+	float y1 = 2.0f;
+	
+	glBegin(GL_LINES);
+		glColor3f(0.48f, 1.0f, 0.48f);
+		for (float i = -2.0f; i < 2.1f; i = i + 0.2f) {
+			glVertex2f(x1, i);
+			glVertex2f(y1, i);
+		}
+	glEnd();
+
+	// Vertical bars
+	float x2 = 2.0f;
+	float y2 = 2.0f;
+	
+	glBegin(GL_LINES);
+		glColor3f(0.48f, 1.0f, 0.48f);
+		for (float j = -2.0f; j < 2.1f; j = j + 0.2f) {
+			glVertex2f(j, x1);
+			glVertex2f(j, y2);
+		}
+	glEnd();
+
+	glLineWidth(1.5f);
+
+	// Horizontally centered line
+	glBegin(GL_LINES);
+		glColor3f(0.0f, 1.0f, 0.0f);
+		glVertex2f(-2.0f, 0.0f);
+		glVertex2f(2.0f, 0.0f);
+	glEnd();
+
+	// Vertically centered line
+	glBegin(GL_LINES);
+		glColor3f(0.0f, 1.0f, 0.0f);
+		glVertex2f(0.0f, -2.0);
+		glVertex2f(0.0f, 2.0f);
+	glEnd();
+	
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+
+
+
+<h1>LESSON 16 - glLoadIdentity</h1>
+<h3>Introduction</h3>
+<p><b>glLoadIdentity()</b> resets the coordinate system to the center which can make for independent movement of objects.</p>
+
+<pre><code>
+1.0f, 0.0f, 0.0f,
+0.0f, 1.0f, 0.0f,
+0.0f, 0.0f, 1.0f
+</code></pre>
+
+<p>In OpenGL there is two object (camera and objects). <b>glMatrixMode(GL_PERSPECTIVE)</b> handles matrices used by perspective- or orthogonal transformation. <b>glMatrixMode(GL_MODELVIEW)</b> handles the matrices 
+used by model-view to transform your objects to view coordiante space (or camera space).</p>
+
+
+
+<h1>LESSON 17 - gluLookAt</h1>
+<h3>Introduction</h3>
+<p>In order to set up a camera you have to initialize OpenGL depth testing and set up the <b>glDepthFunc()</b> and tell it how you want objects to be culled.</p>
+
+<p><b>glEnable(GL_DEPTH_TEST)</b> enables depth testing to determine which object is closest to the screen.</p>
+
+<p><b>glDepthFunc(GL_LEQUAL)</b> tells OGL to perform depth testing to find which object to draw (based on object culling) by finding which is closer to the screen.</p>
+
+<p id="note">When using <b>gluLookAt()</b> the camera will displace and reposition to the view origin if the position exceeds the eye coordinates, eg. if the viewer goes beyond the set z-axis making it look like the camera is flipping in the z-direction.</p>
+
+<p>Image an camera positioned like in the example below. If the user traverse to beyond EyeZ -5.0f, the camera flips around and will focus in the opposite direction.</p>
+
+<pre><code>
+gluLookAt(
+	0.0f, 0.0f, 0.0f, 	// Camera position
+	0.0f, 0.0f, -5.0f,	// Camera view position (focal point)
+	0.0f, 1.0f, 0.0f 	// Camera up-vector
+);
+</code></pre>
+
+<p id="note"><b>gluLookAt()</b> goes in the <b>display()</b> function</p>
+
+<h3>Drawing a grid</h3>
+<p>Here is an example of drawing a grid:</p>
+
+<pre><code>
+glLineWidth(1.0f);
+
+// Horizontal bars
+float x1 = -2.0f;
+float y1 = 2.0f;
+
+glBegin(GL_LINES);
+glColor3f(0.48f, 1.0f, 0.48f);
+for (float i = -2.0f; i < 2.1f; i = i + 0.2f) {
+	glVertex2f(x1, i);
+	glVertex2f(y1, i);
+}
+glEnd();
+
+// Vertical bars
+float x2 = 2.0f;
+float y2 = 2.0f;
+
+glBegin(GL_LINES);
+glColor3f(0.48f, 1.0f, 0.48f);
+for (float j = -2.0f; j < 2.1f; j = j + 0.2f) {
+	glVertex2f(j, x1);
+	glVertex2f(j, y2);
+}
+glEnd();
+
+glLineWidth(1.5f);
+
+// Horizontally centered line
+glBegin(GL_LINES);
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glVertex2f(-2.0f, 0.0f);
+	glVertex2f(2.0f, 0.0f);
+glEnd();
+
+// Vertically centered line
+glBegin(GL_LINES);
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glVertex2f(0.0f, -2.0);
+	glVertex2f(0.0f, 2.0f);
+glEnd();
+</code></pre>
+
+<p id="note">TODO: Drawing a grid needs further explanation and detailing how to draw it as an object filled with color / texture.</p>
+
+
+
+<h1>LESSON 18 - Drawing advanced geometry pt. 1</h1>
+<h3>Introduction</h3>
+<p>x = r sin &theta;</p>
+<p>y = r cos &theta;</p>
+
+<p>This calculates y</p>
+<p>sin &theta; = y / r</p>
+
+<p>This calculates x</p>
+<p>y = r sin &theta;</p>
+<p>cos &theta; = x / r</p>
+
+
+<pre><code>
+#include &lt;math.h&gt;
+...
+
+GLfloat r = 0.26f;	// Radius
+GLfloat theta = 0.0f; 	// Angle
+
+glBegin(GL_POINTS);
+	for (float i = 0.0f; i < 360.0f; i = i + 0.02f) {
+		glVertex2f(r * cos(i), r * sin(i));
+	}
+glEnd();
+</code></pre>
+
+<h3>Drawing an incircle</h3>
+<p>This is also known as an inscribed circle. The formula to calculate the incircle (so it touches the triangle sides) is: ...</p>
+
+<h3>Distance formula</h3>
+<p>diameter = srt((x2-x1)^2 + (y2-y1)^2)</p>
+<p>Incircle (in Hindi): <a href="https://www.youtube.com/watch?v=s4QeKQUgh0A" target="_blank">https://www.youtube.com/watch?v=s4QeKQUgh0A</a></p>
+<p><a href="https://mathworld.wolfram.com/Incircle.html" target="_blank">https://mathworld.wolfram.com/Incircle.html</a></p>
+<p><a href="https://www.quora.com/What-is-the-radius-of-the-incircle-of-a-triangle-with-sides-of-18-24-30-cm" target="_blank">https://www.quora.com/What-is-the-radius-of-the-incircle-of-a-triangle-with-sides-of-18-24-30-cm</a></p>
+<p>Read more about polar coordiante here: <a href="https://mathinsight.org/polar_coordinates" target="_blank">https://mathinsight.org/polar_coordinates</a></p>
+<p>Normal maps in Barycentric coordinates (terrain texture and destructions +++): <a href="https://www.youtube.com/watch?v=JX7xlFAJ0Ds" target="_blank">https://www.youtube.com/watch?v=JX7xlFAJ0Ds</a></li>
+<p>Improve terrain generation with CDLOD: <a href="https://www.youtube.com/watch?v=AT7h8pYJRiw" target="_blank">https://www.youtube.com/watch?v=AT7h8pYJRiw</a></p>
+<p>AI personalities: <a href="youtube.com/watch?v=q7E1N-fJnrA" target="_blank">youtube.com/watch?v=q7E1N-fJnrA</a></li>
+<p>Read Paul's Online Notes</p>
+
+<p id="note">This math example could be used in rigging a scene to generate destructable objects. <a href=http://fire-face.com/destruction/" target="_blank">http://fire-face.com/destruction/</a></p>
+
+
+
+
+<h1>LESSON 19 - Drawing advanced geometry pt. 2 (Drawing an incircle)</h1>
+<h3>Introduction</h3>
+
+<p>To calculate the incircle we need to create some functions to do the calculation and declare some variables to use. Add the following function prototype and variables in the global scope:</p>
+
+<pre><code>
+#define _USE_MATH_DEFINES 1
+#include &lt;math.h&gt;
+...
+
+void circle_radius(void);
+void draw_circle(void);
+...
+
+float a = 4.0f;
+float b = 5.0f;
+float c = 5.0f;
+float semiperimeter, perimeter, area, radius, xoffset, yoffset;
+...
+</code></pre>
+
+<p>Then we write the functions to calculate the incircle radius, area and ...</p>
+
+<pre><code>
+void circle_radius(void)
+{
+	float side1 = sqrt(a);
+	float side2 = sqrt(b);
+	float side3 = sqrt(c);
+
+	perimeter = side1 + side2 + side3;
+	semiperimeter = perimeter / 2.0f;
+	area = sqrt(semiperimeter * (semiperimeter - side1) * (semiperimeter - side2) * (semiperimeter - side3));
+	radius = area / semiperimeter;			// This gives the triangles incircle area
+	xoffset = ((0.0f * side1) + (-1.0f * side2) + (1.0f * side3)) / perimeter;
+	yoffset = ((1.0f * side1) + (-1.0f * side2) + (-1.0f * side3)) / perimeter;
+}
+</code></pre>
+
+<pre><code>
+void draw_circle(void)
+{
+	circle_radius();
+
+	glLoadIdentity();
+	glTranslatef(0.0f, 0.0f, -3.0f);
+
+	glBegin(GL_LINE_LOOP);
+		for (float angle = 0.0f; angle < 2.0f * M_PI; angle = angle + 0.001f) 
+		{
+			glVertex2f(radius * cos(angle) + xoffset, radius * sin(angle) + yoffset);
+		}
+	glEnd();
+}
+</code></pre>
+
+<p>Then we can include the new functions in the <b>display()</b>:</p>
+
+<pre><code>
+glBegin(GL_LINES);
+	// Lines draw between two points
+	glVertex2f(0.0f, 1.0f);
+	glVertex2f(-1.0f, -1.0f);
+	
+	glVertex2f(-1.0f, -1.0f);
+	glVertex2f(1.0f, -1.0f);
+
+	glVertex2f(1.0f, -1.0f);
+	glVertex2f(0.0f, 1.0f);
+glEnd();
+
+draw_circle();
+</code></pre>
+
+<p><a href="https://www.calculatorsoup.com/calculators/geometry-plane/distance-two-points.php" target="_blank">https://www.calculatorsoup.com/calculators/geometry-plane/distance-two-points.php</a></p>
+<p><a href="http://www.gogeometry.com/problem/p193_area_of_a_triangle_semiperimeter_inradius.htm" target="_blank">http://www.gogeometry.com/problem/p193_area_of_a_triangle_semiperimeter_inradius.htm</a></p>
+
+<h1>LESSON 20 - Adding individual transformations to objects</h1>
+<h3>Introduction</h3>
+<p>Add the following to the <b>display()</b> function:</p>
+
+<pre><code>
+static GLfloat tri_movement = 2.0f;
+static GLfloat tri_rising = -2.0f;
+static float tri_rotate = 0.0f;
+static bool tri_centered = false;
+
+glTranslatef(tri_movement, tri_rising, -3.0f);
+glRotatef(tri_rotate, 0.0f, 1.0f, 0.0f);
+...
+
+if (tri_movement > 0.0f) {
+	tri_movement -= 0.001f;
+}
+else {
+	tri_centered = true;
+}
+
+if (tri_rising < 0.0f) {
+	tri_rising += 0.001f;
+}
+
+if (tri_centered != true) {
+	tri_rotate += 0.25f;
+}
+else if (tri_rotate > 360.0f) {
+	tri_rotate = 0.0f;
+}
+...
+
+glLoadIdentity();
+static GLfloat line_movement = 2.0f;
+glTranslatef(0.0f, line_movement, -3.0f);
+
+glBegin(GL_LINES);
+	glVertex2f(0.0f, 1.0f);
+	glVertex2f(0.0f, -1.0f);
+glEnd();
+
+if (line_movement > 0.0f)
+	line_movement -= 0.001f;
+</pre></code>
+
+<p>Then edit the <b>draw_circle()</b> to include these lines of code:</p>
+
+<pre><code>
+static GLfloat cir_movement = -2.0f;
+static GLfloat cir_rising = -2.0f;
+static GLfloat rotate = 0.0f;
+static bool centered = false;
+...
+
+glTranslatef(cir_movement, cir_rising, -3.0f);
+glRotatef(rotate, 0.0f, 1.0f, 0.0f);
+...
+
+if (cir_movement < 0.0f) {
+	cir_movement += 0.001f;
+}
+else {
+	centered = true;
+}
+
+if (cir_rising < 0.0f)
+	cir_rising += 0.001f;
+
+if (centered != true) {
+	rotate += 0.25f;
+}
+else if (rotate > 360.0f) {
+	rotate = 0.0f;
+}
+</pre></code>
+
+<p>This will cause the three individual objects (trianle, line and circle) to rotate until they connect in the middle, then come to a full stop facing the camera.</p>
+
+<p>Discussion regarding positioning objects: <a href="https://www.reddit.com/r/opengl/comments/pmrcjb/how_to_rotate_houses_properly/" target="_blank">https://www.reddit.com/r/opengl/comments/pmrcjb/how_to_rotate_houses_properly/</a><p>
+
+
+
+<h1>LESSON 21 - Drawing 3D objects</h1>
+<h3>Introduction</h3>
+<p>It's time to start drawing 3D object using <b>GL_TRIANGLES</b>. </p>
+
+<p>Here is a working example of how to draw a multicolored triangle and a square and position it to the left and the right of the screen.</p>
+
+<pre><code>
+// LESSON 21
+glTranslatef(-2.0f, 0.0f, -10.0f);
+static GLfloat rotation = 0.05f;
+glRotatef(rotation, 1.0f, 1.0f, 0.0f);
+
+glBegin(GL_TRIANGLES);
+	// Front
+	glColor3f(1.0f, 0.0f, 0.0f);		// Red 
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0, 1.0f);
+
+	// Back
+	glColor3f(0.0f, 1.0f, 0.0f);		// Green
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	
+	// Left
+	glColor3f(0.0f, 0.0f, 1.0f);		// Blue
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	
+	// Right
+	glColor3f(1.0f, 1.0f, 0.0f);		// Yellow
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+glEnd();
+
+// Bottom of the triangle
+glBegin(GL_QUADS);
+	// Bottom
+	glColor3f(0.0f, 1.0f, 1.0f);		// Cyan
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+glEnd();
+
+glLoadIdentity();
+glTranslatef(2.0f, 0.0f, -10.0f);
+static GLfloat quad_rot = 0.05f;
+glRotatef(quad_rot, 1.0f, 1.0f, 0.0f);
+
+glBegin(GL_QUADS);
+	// Front
+	glColor3f(1.0f, 0.0f, 0.0f);		// Red
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	
+	// Left
+	glColor3f(0.0f, 1.0f, 0.0f);		// Green
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	
+	// Back
+	glColor3f(0.0f, 0.0f, 1.0f);		// Blue
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	
+	// Right
+	glColor3f(1.0f, 1.0f, 0.0f);		// Yellow
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+
+	// Top
+	glColor3f(0.0f, 1.0f, 1.0f);		// Cyan
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	// Bottom
+	glColor3f(1.0f, 1.0f, 1.0f);		// White
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+glEnd();
+
+rotation += 0.05f;
+quad_rot += 0.05f;
+</code></pre>
+
+
+
+
+<h1>LESSON 22 - Loading an image file as texture</h1>
+<h3>Introduction</h3>
+<p>Lets start the process of loading in bitmap images to texturize our scenary using the built in <b>WIN32 BITMAP</b> set of functions. Start by making a function prototype for the texture loading function and declare a 
+variable to store the image in:</p>
+
+<pre><code>
+bool load_texture(GLuint*, TCHAR[]);
+...
+
+GLuint texture;
+</code></pre>
+
+<h3>load_texture()</h3>
+<p>Then we implement the <b>load_texture()</b> along the rest of the custom functions in our project:</p>
+
+<pre><code>
+bool load_texture(GLuint* texture, TCHAR imageResourceId[])
+{
+	HBITMAP bitmap = NULL;
+	BITMAP bmp;
+	bool bStatus = false;
+	bitmap = LoadImage(GetModuleHandle(NULL), imageResourceId, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+
+	if (bitmap != NULL) {
+		GetObject(bitmap, sizeof(BITMAP), &bmp);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		// Generate texture
+		glGenTextures(1, texture);
+		glBindTexture(GL_TEXTURE_2D, *texture);
+		// Texture filtering
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+		// Texture wrapping
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
+		gluBuild2DMipmaps(GL_TEXTURE_2D, 3, bmp.bmWidth, bmp.bmHeight, GL_BGR_EXT, GL_UNSIGNED_BYTE, bmp.bmBits);
+		DeleteObject(bitmap);
+		bStatus = true;
+	}
+
+	return bStatus;
+}
+</code></pre>
+
+<p>Make sure that you add <b>#include "texture.h"</b> in your <b>main.c</b> file, and that you enable <b>GL_TEXTURE_2D</b> and to load the texture into memory by placing the following code in your <b>initialize()</b> function for simplicity:</p>
+
+<pre><code>
+glEnable(GL_TEXTURE_2D);
+...
+
+load_texture(&texture, MAKEINTRESOURCE(IDBITMAP_TEXTURE));
+</code></pre>
+
+<h3>Texture.h</h3>
+<p>Then create a new file called <b>texture.h</b> (or something similar) in the <b>Header Files</b> section found in <b>Solution Explorer</b>. Right-click on Solution Explorer (on the folder called <b>Header Files</b>), 
+select <b>Add &rarr; New Item...</b> and choose <b>Header File (.h)</b> in the file dialog. This is where we tell Windows what resources we intend to use, so add the following line into the newly created file:</p>
+
+<pre><code>
+#define IDBITMAP_TEXTURE 101
+
+</code></pre>
+
+<p id="note">You might experience error messages if you don't add whitespace after the <b>#define</b> declaration, if you get a <b>RC1004 - unexpected end of line</b> error when compiling, try adding one or more new lines 
+in the <b>texture.h</b> file</p>
+
+<h3>Adding a Resource.rc file to your setup</h3>
+<p>WIN32 uses a resource system (<a href="https://docs.microsoft.com/en-us/windows/win32/menurc/about-resource-files" target="_blank">More info</a>) to identify the resources your program uses, details like ICON, 
+MENU / SUBMENU, BITMAP, etc. so we also need to create a <b>resource.rc</b> (usually placed in the <b>Resource Files</b> in <b>Solution Explorer</b>).</p>
+
+<p>Right-click on the <b>Resource Files</b> <i>folder</i> and select <b>Add</b> &rarr; <b>New File</b>. In the filedialog navigate to <b>Resource</b> under <b>Visual C++</b> on the righthand side. This time choose 
+<b>Resource File (.rc)</b> and name it <b>resource.rc</b>.</p>
+
+<p id="note">To edit the content of the .rc-file right click on it and select <b>Open With...</b> and select <b>C++ Source Code Editor</b></p>
+
+<pre><code>
+#include "texture.h"
+
+IDBITMAP_TEXTURE BITMAP Smiley.bmp
+
+</code></pre>
+
+<p id="note">If you are using a filename containing spaces you need to add the filename inside "", eg. "Smiley faces.bmp"</p>
+
+<h3>Drawing objects with texturing applied</h3>
+<p>After that we draw a simple quad in the <b>display()</b> function and add the texture coordinates onto it using <b>glTexCoord2f()</b> with the correct texture coordinates (ranging from <b>0 &rarr; 1</b>, where 
+{<b>0, 0</b>} is the lower, left corner of the texture).</p>
+
+<pre><code>
+glBegin(GL_QUADS);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(1.0f, 1.0f);
+
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(-1.0f, 1.0f);
+
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(-1.0f, -1.0f);
+
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(1.0f, -1.0f);
+glEnd();
+</code></pre>
+
+<p>When you compile the project it will now display a quad with your texture on screen.</b>
+
+<p id="note">If you use an image found online (eg. a JPG file, even if you saved it as a BMP) you might experience problems loading the image and your texture will not display at all.<br/><br/>
+ 
+<p>If you don't see a texture on your quad try to convert the image you are using to the correct format with the right extension (<b>.BMP</b>) using your preferred image editor and try again!</p>
+
+
+
+
+
+
+<h1>LESSON 23 - Detailing WIN32 load bitmap</h1>
+<h3>Introduction</h3>
+<p>Using <b>resource.rc</b> all the data you use will be embedded into the executable file.</p>
+
+<h3>Loading audio (the Windows way)</h3>
+<p><b>WM_CREATE</b> automatically calls this case when you start your program. To initialize playing audio in Windows you need to include the header <b>mmsystem.h</b>, and add the library <b>winmm.lib</b> using a pragma. 
+You also need to add the files you intend to load into the header file (eg.) <b>texture.h</b> and <b>resource.rc</b></p>
+
+<h3>texture.h</h3>
+<pre><code>
+#define IDSOUND 102
+</code></pre>
+
+<h3>resource.rc</h3>
+<pre><code>
+IDSOUND WAVE audio.wav
+</code></pre>
+
+<pre><code>
+#include &lt;mmsystem.h&gt;
+...
+
+#pragma comment(lib, "winmm.lib")
+</code></pre>
+
+<p>Once you have set up the program to load audio you can add it to you <b>WinProc</b> in a <b>WM_CREATE</b> case like this:</p>
+
+<pre><code>
+case WM_CREATE:
+	PlaySound(MAKEINTRESOURCE(IDSOUND), NULL, SND_NODEFAULT | SND_RESOURCE | SND_ASYNC);
+	break;
+</code></pre>
+
+<p>As with BMP files the audio is embedded into the executable file (<b>Note</b>: the file size of you executable will be equally much bigger)</p>
+
+<p id="note">More info on reading and writing WAV files in MSDN: <a href="https://docs.microsoft.com/en-us/windows/win32/medfound/tutorial--decoding-audio" target=="_blank">https://docs.microsoft.com/en-us/windows/win32/medfound/tutorial--decoding-audio</a></p>
+
+
+
+
+
+
+<h1>LESSON 24 - Detailing WIN32 load bitmap pt. 2</h1>
+<h3>Introduction</h3>
+<p id="note">To reset the colors to use (texture is nothing but a color) the original color scheme for the texture you can set the <b>glColor3f(1.0f, 1.0f, 1.0f)</b> to white, which doesn't blend with the original texture color.</p>
+
+<pre><code>
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+
+
+
+<h1>LESSON 25 - UV coordinates of a quad</h1>
+<h3>Introduction</h3>
+<p>UV coords are always in between <b>{ 0, 1 }</b>, and will never be negative.</p>
+
+<p>Following the clockwise direction.</p>
+
+<pre><code>
+(0, 1)									(1, 1)
+  |
+  1
+  |
+(0, 0) 					-- 1 --				(1, 0)
+</code></pre>
+
+
+
+<h1>LESSON 26 - </h1>
+<h3>Introduction</h3>
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+
+
+
+
+<h1>KNOWN BUGS</h1>
+<ul>
+	<li>Something adds a transparent layer to <b>GL_LINE_STRIP</b> when drawn</li>
+	<li>Frequent framedrops when adding lighting with rotation and multiple models</li>
+	<li>When entering and leaving fullscreen there is a small delay between redrawing</li>
+</ul>
+
+<h1>WORKING-ON & CURRENTLY TESTING</h1>
+<h3>Procedural drawing and scenary</h3>
+
+<p>Try implementing a full world with lots of models to create realistic scenary.</p>
+<pre><code>
+glBegin(GL_LINE_STRIP);
+	for (i = p1; i <= p2; i++) {
+		glEvalcoord1(u1 + i*(u2-u1)/n);
+	}
+glEnd();
+</code></pre>
+<p>Note: if i = 0 and i = n, then <b>glEvalcoord1()</b> is called with exactly u1 or u2 as parameter.</p>
+<p id="note">Please see OpenGL Programming Guide 7th Ed. p 578 for further details</p>
+
+<h3>Bézier Curves</h3>
+<p>Two-dimensional Evaluators [...] must take u and v into account. Points, colors, normals, or texture coordinates must be supplied over a surface instead of a curve. Mathematically, the definition of a Bézier surface patch 
+is given by</p>
+<pre><code>
+S(u, v) = n sigma i = 0, m sigma j = 0, B SupN SubI (u) B Supm Subj (v) P Subi Subj
+</code></pre>
+<p>where Pij values are a set of m*n control points, and the Bi functions are the same Bernstein polynomials for one dimension. As before, the Pji values can represent vertices, normals, colors, or texture coordinates.</p>
+
+<p>The procedure for using two-dimensional evaluators is similar to the procedure for one dimension:</p>
+<ul>
+	<li>Define the evalutor(s) with <b>mlMap2*()</b>.</li>
+	<li>Enable them by passing the appropriate value to <b>glEnable()</b>.</li>
+	<li>Invoke them either by calling <b>glEvalCoord2()</b> between a <b>glBegin()</b> and <b>glEnd()</b> pair or by specifying and then applying a mesh with <b>glMapGrid2()</b> and <b>glEvalMesh2()</b>.</li>
+</ul>
+
+<p id="note">Please see OpenGL Programming Guide 7th Ed. p 578 for further details</p>
+
+<pre><code>
+Read more about: 
+- Bernstein polynomial, Bézier Curves and Surfaces
+In the mathematical field of numerical analysis, a Bernstein polynomial is a polynomial that is a linear combination of Bernstein basis polynomials. The idea is named after Sergei Natanovich Bernstein.
+
+A numerically stable way to evaluate polynomials in Bernstein form is de Casteljau's algorithm.
+
+Polynomials in Bernstein form were first used by Bernstein in a constructive proof for the Weierstrass approximation theorem. With the advent of computer graphics, Bernstein polynomials, restricted to the interval [0, 1], 
+became important in the form of Bézier curves.
+
+- Affine Transformations
+In Euclidean geometry, an affine transformation, or an affinity (from the Latin, affinis, "connected with"), is a geometric transformation that preserves lines and parallelism (but not necessarily distances and angles).
+
+More generally, an affine transformation is an automorphism of an affine space (Euclidean spaces are specific affine spaces), that is, a function which maps an affine space onto itself while preserving both the dimension of 
+any affine subspaces (meaning that it sends points to points, lines to lines, planes to planes, and so on) and the ratios of the lengths of parallel line segments. Consequently, sets of parallel affine subspaces remain 
+parallel after an affine transformation. An affine transformation does not necessarily preserve angles between lines or distances between points, though it does preserve ratios of distances between points lying on a 
+straight line.
+
+If X is the point set of an affine space, then every affine transformation on X can be represented as the composition of a linear transformation on X and a translation of X. Unlike a purely linear transformation, an affine 
+transformation need not preserve the origin of the affine space. Thus, every linear transformation is affine, but not every affine transformation is linear.
+
+Examples of affine transformations include translation, scaling, homothety, similarity, reflection, rotation, shear mapping, and compositions of them in any combination and sequence.
+
+Viewing an affine space as the complement of a hyperplane at infinity of a projective space, the affine transformations are the projective transformations of that projective space that leave the hyperplane at infinity 
+invariant, restricted to the complement of that hyperplane.
+
+A generalization of an affine transformation is an affine map[1] (or affine homomorphism or affine mapping) between two (potentially different) affine spaces over the same field k. Let (X, V, k) and (Z, W, k) be two 
+affine spaces with X and Z the point sets and V and W the respective associated vector spaces over the field k. 
+A map f: X → Z is an affine map if there exists a linear map mf : V → W such that mf (x − y) = f (x) − f (y) for all x, y in X.[2]
+
+</code></pre>
+
+
+<pre><code>
+Define a Physical Renderer with F1-F12 to toggle rendering mode and positions
+Create a Powered-by newscasting website
+</code></pre>
+
+
+
+
+<h1>Further reading</h1>
+<ul>
+	<li>Great Win32 API tutorial: <a href="http://www.winprog.org/tutorial/" target="_blank">http://www.winprog.org/tutorial/</a></li>
+	<li>Make the intro screen logo with bumpmapping!</li>
+	<li>What is a 3D object: <a href="https://www.youtube.com/watch?v=4EcHkA-2cwM&t" target="_blank">https://www.youtube.com/watch?v=4EcHkA-2cwM&t</a></li>
+	<li>Read up on MSVC' cmdline compiler options</li>
+	<li>Take a look at <b>DescribePixelFormat</b> for when you initialize OpenGL.</li>
+	<li><b>ChangeDisplaySettings()</b> should be called in uninitialize to reset the display settings.</li>
+	<li>OpenGL supports <b>timers</b> (Note: only available in OpenGL 3.2 or higher)<pre><code>
+	GLint64 timer;
+	glGetInteger64v(GL_TIMESTAMP, &timer);
+	printf("Milliseconds: %f\n", timer/1000000.0);
+	</code></pre></li>
+	<li>Microsoft's C language resource: <a href="https://docs.microsoft.com/en-us/cpp/c-language/c-language-reference?view=msvc-160" target="_blank">https://docs.microsoft.com/en-us/cpp/c-language/c-language-reference?view=msvc-160</a></li>
+	<li>Remove the MSVCRT100.dll Not found problem: <h href="https://iq.direct/blog/324-how-to-make-your-c-app-independent-of-visual-c-runtime.html" target="_blank">https://iq.direct/blog/324-how-to-make-your-c-app-independent-of-visual-c-runtime.html</a></li>
+	<li>Check if <b>InitCommonControlsEx()</b> with the flag <b>ICC_HOTKEY_CLASS</b> solves the <b>alt+enter</b> playing a default sound issue.</li>
+	<li>Probably a good start for a level editor (rip this style!): <a href="http://www.alanbaylis.com/freeworld.html" target="_blank">http://www.alanbaylis.com/freeworld.html</a></li>
+	<li>Another great example of a level editor (2D) (rip this style too): <a href="https://nooskewl.itch.io/ashedit" target="_blank">https://nooskewl.itch.io/ashedit</a></li>
+	<li>Good program example for spline creation (camera paths, roads and other curves): <a href="https://www.alanbaylis.com/apps.html#spline_ed" target="_blank">https://www.alanbaylis.com/apps.html#spline_ed</a></li>
+	<li>Splash Screen example that could be modified to generate a loading modal screen: <a href="http://www.alanbaylis.com/win32_tut04.html" target="_blank">http://www.alanbaylis.com/win32_tut04.html</a></li>
+	<li>LOWORD and HIWORD is a 32-bit information struct that holds low-order word (last 16 bits) and high-order word (first 16 bits) of the <b>wParam</b>.</li>
+	<li>OpenGL white book (ogl and win95): <a href="http://opengl.czweb.org/ewtoc.html" target="_blank">http://opengl.czweb.org/ewtoc.html</a></li>
+	<li>Check out the code example at the bottom of this link: <a href="https://web.cs.ship.edu/~djmoon/cgalgs/cgalgs-notes/tessellation.pdf" target="_blank">https://web.cs.ship.edu/~djmoon/cgalgs/cgalgs-notes/tessellation.pdf</a></li>
+	<li>Math heavy notes found here: <a href="https://web.cs.ship.edu/~djmoon/cgalgs/cgalgs-notes/" target="_blank">https://web.cs.ship.edu/~djmoon/cgalgs/cgalgs-notes/</a></li>
+	<li>Finite State Machine notes: <a href="https://web.cs.ship.edu/~djmoon/automata/automata-notes/automata-fas.pdf" target="_blank">https://web.cs.ship.edu/~djmoon/automata/automata-notes/automata-fas.pdf</a></li>
+	<li>Definition of Win32 function names: <a href="http://www.novell.com/documentation/developer/samplecode/ndpscomp_sample/gateway_inc/WS2NLM.H.html" target="_blank">http://www.novell.com/documentation/developer/samplecode/ndpscomp_sample/gateway_inc/WS2NLM.H.html</a></li>
+	<li>Custom Window captionbar: <a href="https://docs.microsoft.com/en-us/windows/win32/dwm/customframe" target="_blank">https://docs.microsoft.com/en-us/windows/win32/dwm/customframe</a></li>
+	<li>Win32 system function: <a href="https://zetcode.com/gui/winapi/system/" target="_blank">https://zetcode.com/gui/winapi/system/</a></li>
+	<li>Advanced controls in Windows API: <a href="https://zetcode.com/gui/winapi/advancedcontrols/" target="_blank">https://zetcode.com/gui/winapi/advancedcontrols/</a></li>
+	<li>Custom controls in Windows API: <a href="https://zetcode.com/gui/winapi/customcontrols/" target="_blank">https://zetcode.com/gui/winapi/customcontrols/</a></li>
+	<li>Notification icon MSDN resource: <a href="https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa" target="_blank">https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa?redirectedfrom=MSDN</a></li>
+	<li>Function pointer tutorial: <a href="https://www.dreamincode.net/forums/topic/118308-function-pointer-tutorial/" target="_blank">https://www.dreamincode.net/forums/topic/118308-function-pointer-tutorial/</a></li>
+	<li>OOP in C tutorial: <a href="https://www.dreamincode.net/forums/topic/77464-object-oriented-programming-in-c/" target="_blank">https://www.dreamincode.net/forums/topic/77464-object-oriented-programming-in-c/</a></li>
+	<li>Data modeling for games in C: <a href="https://www.dreamincode.net/forums/topic/26590-data-modeling-for-games-in-c-part-i/" target="_blank">https://www.dreamincode.net/forums/topic/26590-data-modeling-for-games-in-c-part-i/</a></li>
+	<li>OpenGL + Win32 font: <a href="http://aslike.egloos.com/2762856" target="_blank">http://aslike.egloos.com/2762856</a></li>
+	<li>Make a DLL in Visual Studio (C++): <a href="https://aticleworld.com/how-to-create-and-use-dll-dynamic-link-library-in-c/" target="_blank">https://aticleworld.com/how-to-create-and-use-dll-dynamic-link-library-in-c/</a></li>
+	<li>Very nice implementation of Astroid in C and SDL2: <a href="https://github.com/velorek1/asteroid" target="_blank">https://github.com/velorek1/asteroid</a></li>
+	<li>Use glTF to create a scene model: <a href="https://github.com/KhronosGroup/glTF" target="_blank">https://github.com/KhronosGroup/glTF</a></li>
+	<li>Use glTF to create a 3D format: <a href="http://paulbourke.net/dataformats/glTF/" target="_blank">http://paulbourke.net/dataformats/glTF/</a></li>
+	<li>glTF written for C: <a href="https://github.com/jkuhlmann/cgltf" target="_blank">https://github.com/jkuhlmann/cgltf</a></li>
+	<li>Opening a Window (win32) with good use of pragma: <a href="https://subscription.packtpub.com/book/business_and_other/9781800208087/1/ch01lvl1sec07/creating-a-window" target=_blank">https://subscription.packtpub.com/book/business_and_other/9781800208087/1/ch01lvl1sec07/creating-a-window</a></li>
+	<li>glDebugMessageCallback: <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml" target="_blank">https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDebugMessageCallback.xhtml</a></li>
+	<li>Lighting tutorial with math: <a href="https://ncase.me/sight-and-light/" target="_blank">https://ncase.me/sight-and-light/</a></li>
+	<li>Animation coding (C++): <a href="https://animcoding.com/post/animation-tech-intro-part-1-skinning" target="_blank">https://animcoding.com/post/animation-tech-intro-part-1-skinning</a></li>
+	<li>Neural Matrials paper: <a href="https://cseweb.ucsd.edu/~viscomp/projects/NeuMIP/" target="_blank">https://cseweb.ucsd.edu/~viscomp/projects/NeuMIP/</a></li>
+	<li>Multi-Resolution Neural Material online paper: <a href="https://cseweb.ucsd.edu/~viscomp/projects/NeuMIP/assets/neumip_final.pdf" target="_blank">https://cseweb.ucsd.edu/~viscomp/projects/NeuMIP/assets/neumip_final.pdf</a></li>
+	<li>Gaussian Matreial Synthesis<a href="https://users.cg.tuwien.ac.at/~zsolnai/wp/wp-content/uploads/2018/04/gms.pdf" target="_blank">https://users.cg.tuwien.ac.at/~zsolnai/wp/wp-content/uploads/2018/04/gms.pdf</a></li>
+	<li>Photorealistic Material Editing<a href="https://users.cg.tuwien.ac.at/~zsolnai/wp/wp-content/uploads/2019/09/pme.pdf" target="_blank">https://users.cg.tuwien.ac.at/~zsolnai/wp/wp-content/uploads/2019/09/pme.pdf</a></li>
+	<li>What your website should look like: <a href="https://jadkhoury.github.io/terrain_blog.html" target="_blank">https://jadkhoury.github.io/terrain_blog.html</a></li>
+	<li>Ray-casting in 2D games cheatsheet: <a href="https://sszczep.github.io/ray-casting-in-2d-game-engines/cheatsheet.html" target="_blank">https://sszczep.github.io/ray-casting-in-2d-game-engines/cheatsheet.html</a></li>
+	<li>Ray-casting in 2D games writeup: <a href="https://sszczep.github.io/ray-casting-in-2d-game-engines/" target="_blank">https://sszczep.github.io/ray-casting-in-2d-game-engines/</a></li>
+	<li>How to write better liraries: <a href="https://handmade.network/forums/articles/t/7138-how_to_write_better_game_libraries" target="_blank">https://handmade.network/forums/articles/t/7138-how_to_write_better_game_libraries</a></li>
+	<li>GUI Skeleton code (Win32, Linux, GTK): <a href="https://handmade.network/forums/articles/t/2836-gui_program_skeleton" target="_blank">https://handmade.network/forums/articles/t/2836-gui_program_skeleton</a></li>
+	<li>Implement a PNG reader: <a href="https://handmade.network/forums/articles/t/2822-tutorial_implementing_a_basic_png_reader_the_handmade_way" target="_blank">https://handmade.network/forums/articles/t/2822-tutorial_implementing_a_basic_png_reader_the_handmade_way</a></li>
+	<li>PNG Structure: <a href="http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html" target="_blank">http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html</a></li>
+	<li>PNG Chunks: <a href="http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html" target="_blank">http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html</a></li>
+	<li>AABB collision detection library: <a href="https://github.com/siddharthroy12/sr_resolve" target="_blank">https://github.com/siddharthroy12/sr_resolve</a></li>
+	<li>Indie dev reminder list: <a href="https://www.reddit.com/r/gamedev/comments/popigw/1_simple_lowcost_way_to_never_forget_your/" target="_blank">https://www.reddit.com/r/gamedev/comments/popigw/1_simple_lowcost_way_to_never_forget_your/</a></li>
+	<li>OpenGL ES 2 extensive tutorial: <a href="https://pragprog.com/titles/kbogla/opengl-es-2-for-android/" target="_blank">https://pragprog.com/titles/kbogla/opengl-es-2-for-android/</a></li>
+	<li>Steam genre details: <a href="https://howtomarketagame.com/2020/10/19/steamgenres/" target="_blank">https://howtomarketagame.com/2020/10/19/steamgenres/</a></li>
+	<li>Legacy OGL Understanding Coordinate Transformation<a href="https://gdbooks.gitbooks.io/legacyopengl/content/Chapter4/CoordinateTransforms.html" target="_blank">https://gdbooks.gitbooks.io/legacyopengl/content/Chapter4/CoordinateTransforms.html</a></li>
+	<li>Discussion of positioning objects in OpenGL (use the positioning code): <a href="https://www.reddit.com/r/opengl/comments/pmrcjb/how_to_rotate_houses_properly/" target="_blank">https://www.reddit.com/r/opengl/comments/pmrcjb/how_to_rotate_houses_properly/</a></li>
+	<li>Reversed-Z rendering in OpenGL (4.5)<a href="https://www.wedesoft.de/software/2021/09/20/reversed-z-rendering/" target="_blank">https://www.wedesoft.de/software/2021/09/20/reversed-z-rendering/</a></li>
+	<li>Rigid body game physics pt. 6<a href="https://www.wedesoft.de/simulation/2019/12/03/rigid-body-game-physics-6/" target="_blank">https://www.wedesoft.de/simulation/2019/12/03/rigid-body-game-physics-6/</a></li>
+	<li>Minimal OpenGL example in C<a href="https://www.wedesoft.de/software/2018/08/03/raw-opengl/" target="_blank">https://www.wedesoft.de/software/2018/08/03/raw-opengl/</a></li>
+	<li>Diffuse lighting tutorial: <a href="https://www.youtube.com/watch?v=e-lnyzN2wrM" target="_blank">https://www.youtube.com/watch?v=e-lnyzN2wrM</a></li>
+	<li>Diffuse specular lighting tutorial: <a href="https://www.youtube.com/watch?v=dJo1Ao9XydM" target="_blank">https://www.youtube.com/watch?v=dJo1Ao9XydM</a></li>
+	<li>ASCII flowchart generator: <a href="https://asciiflow.com/#/" target="_blank">https://asciiflow.com/#/</a></li>
+	<li>Project based C-tutorials: <a href="https://github.com/rby90/project-based-tutorials-in-c" target="_blank">https://github.com/rby90/project-based-tutorials-in-c</a></li>
+	<li>Procedurial Technique (L-Systems): <a href="https://en.wikipedia.org/wiki/L-system" target="_blank">https://en.wikipedia.org/wiki/L-system</a></li>
+	<li>Wang Tiles: <a href="http://www.cr31.co.uk/stagecast/wang/intro.html" target="_blank">http://www.cr31.co.uk/stagecast/wang/intro.html</a></li>
+	<li>Test framework for C / C++<a href="https://github.com/Snaipe/Criterion" target="_blank">https://github.com/Snaipe/Criterion</a></li>
+	<li>PortableGL C99 Engine<a href="https://github.com/rswinkle/PortableGL" target="_blank">https://github.com/rswinkle/PortableGL</a></li>
+	<li>Find a random number inside a circle: <a href="https://www.reddit.com/r/programming/comments/q5zmtt/finding_a_random_point_within_a_circle/" target="_blank">https://www.reddit.com/r/programming/comments/q5zmtt/finding_a_random_point_within_a_circle/</a></li>
+	<li>5 ways to draw an outline: <a href="https://alexanderameye.github.io/notes/rendering-outlines/" target="_blank">https://alexanderameye.github.io/notes/rendering-outlines/</a></li>
+	<li>Procedural L-Systems research paper: <a href="https://cgl.ethz.ch/Downloads/Publications/Papers/2001/p_Par01.pdf" target="_blank">https://cgl.ethz.ch/Downloads/Publications/Papers/2001/p_Par01.pdf</a></li>
+	<li>Procedurally generated content: <a href="http://www.squidi.net/three/c_procedural.php" target="_blank">http://www.squidi.net/three/c_procedural.php</a></li>
+	<li>Tutorial on jumping: <a href="http://www.squidi.net/three/entry.php?id=84" target="_blank">http://www.squidi.net/three/entry.php?id=84</a></li>
+	<li>Volumetric Cloud paper: <a href="http://killzone.dl.playstation.net/killzone/horizonzerodawn/presentations/Siggraph15_Schneider_Real-Time_Volumetric_Cloudscapes_of_Horizon_Zero_Dawn.pdf" target="_blank">http://killzone.dl.playstation.net/killzone/horizonzerodawn/presentations/Siggraph15_Schneider_Real-Time_Volumetric_Cloudscapes_of_Horizon_Zero_Dawn.pdf</a></li>
+	<li>Simulation Principle of Procedural Generation (Dwarf Fortress): <a href="http://www.gameaipro.com/GameAIPro2/GameAIPro2_Chapter41_Simulation_Principles_from_Dwarf_Fortress.pdf" target="_blank">http://www.gameaipro.com/GameAIPro2/GameAIPro2_Chapter41_Simulation_Principles_from_Dwarf_Fortress.pdf</a></li>
+	<li>Network Programming with C book: <a href="https://www.amazon.co.uk/dp/1789349869" target="_blank">https://www.amazon.co.uk/dp/1789349869</a></li>
+	<li>cglm math library: <a href="https://github.com/recp/cglm" target="_blank">https://github.com/recp/cglm</a></li>
+	<li>3D rigid body physics simulation paper: <a href="http://jonathanbosson.github.io/reports/TNM085_group5.pdf" target="_blank">http://jonathanbosson.github.io/reports/TNM085_group5.pdf</a></li>
+	<li>How to create a custom 2D physics engine: <a href="https://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331" target="_blank">https://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331</a></li>
+	<li>Physichs: Angular Effect paper: <a href="https://www.chrishecker.com/images/c/c2/Gdmphys2.pdf" target="_blank">https://www.chrishecker.com/images/c/c2/Gdmphys2.pdf</a></li>
+	<li>Texturing a circle: <a href="https://www.youtube.com/watch?v=GNcFjFmqEc8" target="_blank">https://www.youtube.com/watch?v=GNcFjFmqEc8</a></li>
+	<li>BEST LEGACY OPENGL tutorial pt. 1: Introduction to Computer Graphics (California State Uni.)<a href="http://cse.csusb.edu/tongyu/courses/cs420/notes/intro.php" target="_blank">http://cse.csusb.edu/tongyu/courses/cs420/notes/intro.php</a></li>
+	<li>BEST LEGACY OPENGL tutorial pt. 2: Advanced Computer Graphics (California State Uni.)<a href="http://cse.csusb.edu/tongyu/courses/cs520/notes/texture.php" target="_blank">http://cse.csusb.edu/tongyu/courses/cs520/notes/texture.php</a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+</ul>
+
+<h1>Pro tips</h1>
+<ul>
+	<li>Expand the first chapter with this knowledge: <a href="https://levelup.gitconnected.com/5-computer-hardware-concepts-that-every-programmer-should-know-32711c759dc0" tatget="_blank">https://levelup.gitconnected.com/5-computer-hardware-concepts-that-every-programmer-should-know-32711c759dc0</a></li>
+	<li>
+	<h3>Various GUI library compatable with C</h3>
+	<ul>
+		<li>wxWidget: <a href="https://docs.wxwidgets.org/3.0/overview_helloworld.html" target="_blank">https://docs.wxwidgets.org/3.0/overview_helloworld.html</a></li>
+		<li>LVGL: <a href="https://lvgl.io/" target="_blank">https://lvgl.io/</a></li>
+		<li>NAPPGUI: <a href="https://nappgui.com/en/home/web/home.html" target="_blank">https://nappgui.com/en/home/web/home.html</a></li>
+		<li>RayGUI: <a href="https://github.com/raysan5/raygui" target="_blank">https://github.com/raysan5/raygui</a></li>
+		<li>Nuklear: <a href="https://github.com/vurtun/nuklear" target="_blank">https://github.com/vurtun/nuklear</a></li>
+		<li>LibUI: <a href="https://github.com/andlabs/libui" target="_blank">https://github.com/andlabs/libui</a></li>
+		<li>GTK: <a href="https://www.gtk.org/" target="_blank">https://www.gtk.org/</a></li>
+		<li>FLTK: <a href="https://www.fltk.org/" target="_blank">https://www.fltk.org/</a></li>
+		<li>CImGUI: <a href="https://github.com/cimgui/cimgui" target="_blank">https://github.com/cimgui/cimgui</a></li>
+		<li>IUP Portable User Interface<a href="https://www.tecgraf.puc-rio.br/iup/" target="_blank">https://www.tecgraf.puc-rio.br/iup/</a></li>
+		<li>Glade GUI: <a href="https://glade.gnome.org/" target="_blank">https://glade.gnome.org/</a></li>
+	</ul>
+	</li>
+	<li>
+	<h3>PNG libraries for OpenGL</h3>
+		<ul>
+			<li><a href="https://lodev.org/lodepng/" target="_blank">https://lodev.org/lodepng/</a></li>
+		</ul>
+	</li>
+	<li>
+	<h3>How is header only libraries made?</h3>
+	
+	<p>The compiler basically doesn't care what the file is called, whether it's a C or H extension, it just compiles the code all the same - like it may as well all be in one big source file. 
+	When you #include a header it just says "pretend this other file's contents exist here".
+
+	Yes, there's the issue of scope - what you define in one C file doesn't exist in other C files unless externed via header but it's really not that complicated.</p>
+	
+	<p>Perhaps a simple example could help. Consider the following:</p>
+	<pre><code>
+	[header.h]
+	int all_my_great_stuff();    /* forward declare */
+	#ifdef IMPLEMENTATION
+	int all_my_great stuff()     /* implementation */
+	{
+	  return 1;
+	} 
+	#endif
+	</code></pre>
+	
+	<p>and</p>
+	
+	<pre><code>
+	[main.c]
+	#include "header,h"
+	/* only has forward declare at this point */
+
+	#define IMPLEMENTATION
+	#include "header,h"
+	/* has forward declare and implementation in *this* unit */
+	<p>The main thing to note is that the IMPLEMENTATION should only defined in *one* unit or obviously you will get colliding symbols as multiple units provide the same stuff. 
+	You could play around with static functions but that would be wasteful.</p>
+	</code></pre>
+	</li>
+	<li>
+	<h3>Function pointers in C</h3>
+	<p>Source: <a href="https://stackoverflow.com/questions/840501/how-do-function-pointers-in-c-work" target="_blank">https://stackoverflow.com/questions/840501/how-do-function-pointers-in-c-work</a></p>
+	<pre><code>
+	Let's start with a basic function which we will be pointing to:
+
+	int addInt(int n, int m) {
+		return n+m;
+	}
+	First thing, let's define a pointer to a function which receives 2 ints and returns an int:
+
+	int (*functionPtr)(int,int);
+	Now we can safely point to our function:
+
+	functionPtr = &addInt;
+	Now that we have a pointer to the function, let's use it:
+
+	int sum = (*functionPtr)(2, 3); // sum == 5
+	Passing the pointer to another function is basically the same:
+
+	int add2to3(int (*functionPtr)(int, int)) {
+		return (*functionPtr)(2, 3);
+	}
+	We can use function pointers in return values as well (try to keep up, it gets messy):
+
+	// this is a function called functionFactory which receives parameter n
+	// and returns a pointer to another function which receives two ints
+	// and it returns another int
+	int (*functionFactory(int n))(int, int) {
+		printf("Got parameter %d", n);
+		int (*functionPtr)(int,int) = &addInt;
+		return functionPtr;
+	}
+	But it's much nicer to use a typedef:
+
+	typedef int (*myFuncDef)(int, int);
+	// note that the typedef name is indeed myFuncDef
+
+	myFuncDef functionFactory(int n) {
+		printf("Got parameter %d", n);
+		myFuncDef functionPtr = &addInt;
+		return functionPtr;
+	}
+	</ocde></pre>
+	</li>
+	<p>OpenGL colors</p>
+	<pre><code>
+	glColor3f(0.0, 0.0, 0.0);	// black 
+	glColor3f(1.0, 0.0, 0.0);	// red 
+	glColor3f(0.0, 1.0, 0.0);	// green 
+	glColor3f(1.0, 1.0, 0.0);	// yellow 
+	glColor3f(0.0, 0.0, 1.0);	// blue 
+	glColor3f(1.0, 0.0, 1.0);	// magenta 
+	glColor3f(0.0, 1.0, 1.0);	// cyan 
+	glColor3f(1.0, 1.0, 1.0);	// white
+	</code></pre>
+	</li>
+	<li>
+	<p>OpenGL functions reference Fixed Functional Pipeline vs Programmable 3.3 core</p>
+	<pre><code>
+	/*
+	 * If you want to use any of these old functions from the
+	 * fixed function pipeline you can use TinyGL or Mesa
+	 * for software rendering version or implement them as wrappers
+	 * around modern OpenGL
+	void     glBegin(GLenum);
+	void     glClear(GLbitfield);
+	void     glClearColor(GLclampf, GLclmapf, GLclampf, GLclampf);
+	void     glColor3f(GLfloat, GLfloat, GLfloat);
+	void     glColor4f(GLfloat, GLfloat, GLfloat, GLfloat);
+	void     glCullFace(GLenum);
+	void     glDisable(GLenum);
+	void     glEnable(GLenum);
+	void     glEnd(void);
+	void     glFrustum(GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble);
+	GLubyte *glGetString(GLenum);
+	void     glLoadIdentity(void);
+	void     glMatrixMode(GLenum);
+	void     glRotatef(GLfloat, GLfloat, GLfloat, GLfloat);
+	void     glRotated(GLdouble, GLdouble, GLdouble, GLdouble);
+	void     glScalef(GLfloat, GLfloat, GLfloat);
+	void     glScaled(GLdouble, GLdouble, GLdouble);
+	void     glScissor(GLint, GLint, GLsizei, GLsizei);
+	void     glTexCoord1f(GLfloat);
+	void     glTexCoord2f(GLfloat, GLfloat);
+	void     glTexCoord3f(GLfloat, GLfloat, GLfloat);
+	void     glTexCoord4f(GLfloat, GLfloat, GLfloat, GLfloat);
+	void     glTexCoord1d(GLdouble);
+	void     glTexCoord2d(GLdouble, GLdouble);
+	void     glTexCoord3d(GLdouble, GLdouble, GLdouble);
+	void     glTexCoord4d(GLdouble, GLdouble, GLdouble, GLdouble);
+	void     glTexImage2D(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid*);
+	void     glTexSubImage2D(GLenum GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const GLvoid*);
+	void     glTranslatef(GLfloat, GLfloat, GLfloat);
+	void     glTranslated(GLdouble, GLdouble, GLdouble);
+	void     glVertex2f(GLfloat, GLfloat);
+	void     glVertex3f(GLfloat, GLfloat, GLfloat);
+	void     glVertex4f(GLfloat, GLfloat, GLfloat);
+	void     glViewport(GLint, GLint, GLsizei, GLsizei);
+	*/
+
+
+	/* 3.3 core
+	void     glActiveTexture(GLenum);
+	void     glAttachShader(GLuint, GLuint);
+	void     glBeginConditionalRender(GLuint, GLenum);
+	void     glBeginQuery(GLenum, GLuint);
+	void     glBeginTransformFeedback(GLenum);
+	void     glBindAttribLocation(GLuint, GLuint, const GLchar*);
+	void     glBindBuffer(GLenum, GLuint);
+	void     glBindBufferBase(GLenum, GLuint, GLuint);
+	void     glBindBufferRange(GLenum, GLuint, GLuint, GLintptr, GLsizeiptr);
+	void     glBindFragDataLocation(GLuint, GLuint, const char*);
+	void     glBindFragDataLocationIndexed(GLuint, GLuint, GLuint, const char*);
+	void     glBindFramebuffer(GLenum, GLuint);
+	void     glBindRenderbuffer(GLenum, GLuint);
+	void     glBindSampler(GLuint, GLuint);
+	void     glBindTexture(GLenum, GLuint);
+	void     glBindVertexArray(GLuint);
+	void     glBlendColor(GLclampf, GLclampf, GLclampf, GLclampf);
+	void     glBlendEquation(GLenum);
+	void     glBlendEquationSeparate(GLenum, GLenum);
+	void     glBlendFunc(GLenum, GLenum);
+	void     glBlendFuncSeparate(GLenum, GLenum, GLenum, GLenum);
+	void     glBlitFramebuffer(GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum);
+	void     glBufferData(GLenum, GLsizeiptr, const GLvoid*, GLenum);
+	void     glBufferSubData(GLenum, GLintptr, GLsizeiptr, const GLvoid*);
+	void     glCheckFramebufferStatus(GLenum);
+	void     glClampColor(GLenum, GLenum);
+	void     glClear(GLbitfield);
+
+	void     glClearBufferiv(GLenum, GLint, const GLint*);
+	void     glClearBufferuiv(GLenum, GLint, const GLint*);
+	void     glClearBufferfv(GLenum, GLint, const GLfloat*);
+	void     glClearBufferfi(GLenum, GLint, GLfloat, GLint);
+
+	void     glClearColor(GLclampf, GLclampf, GLclampf, GLclampf);
+	void     glClearDepth(GLclampd);
+	void     glClearStencil(GLint);
+	void     glCLientWaitSync(GLsync, GLbitfield, GLuint64);
+	void     glColorMask(GLboolean, GLboolean, GLboolean, GLboolean);
+	void     glCompileShader(GLuint);
+	void     glCompressedTexImage1D(GLenum, GLint, GLsizei, GLint, GLsizei, const GLvoid*);
+	void     glCompressedTexImage2D(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid*);
+	void     glCompressedTexImage3D(GLenum, GLint, GLenum, GLsizei, GLsizei, GLsizei, GLint, GLsizei, const GLvoid*);
+	void     glCompressedTexSubImage1D(GLenum, GLint, GLint, GLsizei, GLenum, GLsizei, const GLvoid*);
+	*/
+	</code></pre>
+	</li>
+	<li>
+	<h3>Texturing a cube</h3>
+	<p>Source: <a href="http://www.songho.ca/opengl/gl_vbo.html" target="_blank">http://www.songho.ca/opengl/gl_vbo.html</a></p>
+	<pre><code>
+	// unit cube      
+	// A cube has 6 sides and each side has 4 vertices, therefore, the total number
+	// of vertices is 24 (6 sides * 4 verts), and 72 floats in the vertex array
+	// since each vertex has 3 components (x,y,z) (= 24 * 3)
+	//    v6----- v5  
+	//   /|      /|   
+	//  v1------v0|   
+	//  | |     | |   
+	//  | v7----|-v4  
+	//  |/      |/    
+	//  v2------v3    
+
+	// vertex position array
+	GLfloat vertices[]  = {
+		 .5f, .5f, .5f,  -.5f, .5f, .5f,  -.5f,-.5f, .5f,  .5f,-.5f, .5f, // v0,v1,v2,v3 (front)
+		 .5f, .5f, .5f,   .5f,-.5f, .5f,   .5f,-.5f,-.5f,  .5f, .5f,-.5f, // v0,v3,v4,v5 (right)
+		 .5f, .5f, .5f,   .5f, .5f,-.5f,  -.5f, .5f,-.5f, -.5f, .5f, .5f, // v0,v5,v6,v1 (top)
+		-.5f, .5f, .5f,  -.5f, .5f,-.5f,  -.5f,-.5f,-.5f, -.5f,-.5f, .5f, // v1,v6,v7,v2 (left)
+		-.5f,-.5f,-.5f,   .5f,-.5f,-.5f,   .5f,-.5f, .5f, -.5f,-.5f, .5f, // v7,v4,v3,v2 (bottom)
+		 .5f,-.5f,-.5f,  -.5f,-.5f,-.5f,  -.5f, .5f,-.5f,  .5f, .5f,-.5f  // v4,v7,v6,v5 (back)
+	};
+
+	// normal array
+	GLfloat normals[] = {
+		 0, 0, 1,   0, 0, 1,   0, 0, 1,   0, 0, 1,  // v0,v1,v2,v3 (front)
+		 1, 0, 0,   1, 0, 0,   1, 0, 0,   1, 0, 0,  // v0,v3,v4,v5 (right)
+		 0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0,  // v0,v5,v6,v1 (top)
+		-1, 0, 0,  -1, 0, 0,  -1, 0, 0,  -1, 0, 0,  // v1,v6,v7,v2 (left)
+		 0,-1, 0,   0,-1, 0,   0,-1, 0,   0,-1, 0,  // v7,v4,v3,v2 (bottom)
+		 0, 0,-1,   0, 0,-1,   0, 0,-1,   0, 0,-1   // v4,v7,v6,v5 (back)
+	};
+
+	// colour array
+	GLfloat colors[] = {
+		 1, 1, 1,   1, 1, 0,   1, 0, 0,   1, 0, 1,  // v0,v1,v2,v3 (front)
+		 1, 1, 1,   1, 0, 1,   0, 0, 1,   0, 1, 1,  // v0,v3,v4,v5 (right)
+		 1, 1, 1,   0, 1, 1,   0, 1, 0,   1, 1, 0,  // v0,v5,v6,v1 (top)
+		 1, 1, 0,   0, 1, 0,   0, 0, 0,   1, 0, 0,  // v1,v6,v7,v2 (left)
+		 0, 0, 0,   0, 0, 1,   1, 0, 1,   1, 0, 0,  // v7,v4,v3,v2 (bottom)
+		 0, 0, 1,   0, 0, 0,   0, 1, 0,   0, 1, 1   // v4,v7,v6,v5 (back)
+	};
+
+	// texture coord array
+	GLfloat texCoords[] = {
+		1, 0,   0, 0,   0, 1,   1, 1,               // v0,v1,v2,v3 (front)
+		0, 0,   0, 1,   1, 1,   1, 0,               // v0,v3,v4,v5 (right)
+		1, 1,   1, 0,   0, 0,   0, 1,               // v0,v5,v6,v1 (top)
+		1, 0,   0, 0,   0, 1,   1, 1,               // v1,v6,v7,v2 (left)
+		0, 1,   1, 1,   1, 0,   0, 0,               // v7,v4,v3,v2 (bottom)
+		0, 1,   1, 1,   1, 0,   0, 0                // v4,v7,v6,v5 (back)
+	};
+
+	// index array for glDrawElements()
+	// A cube requires 36 indices = 6 sides * 2 tris * 3 verts
+	GLuint indices[] = {
+		 0, 1, 2,   2, 3, 0,    // v0-v1-v2, v2-v3-v0 (front)
+		 4, 5, 6,   6, 7, 4,    // v0-v3-v4, v4-v5-v0 (right)
+		 8, 9,10,  10,11, 8,    // v0-v5-v6, v6-v1-v0 (top)
+		12,13,14,  14,15,12,    // v1-v6-v7, v7-v2-v1 (left)
+		16,17,18,  18,19,16,    // v7-v4-v3, v3-v2-v7 (bottom)
+		20,21,22,  22,23,20     // v4-v7-v6, v6-v5-v4 (back)
+	};
+	</code></pre>
+	</li>
+	<li>
+	<p>More copied from ProtableGL: <a href="https://github.com/rswinkle/PortableGL/blob/master/src/gl_impl_unsafe.c" target="_blank">https://github.com/rswinkle/PortableGL/blob/master/src/gl_impl_unsafe.c</a></p>
+	<pre><code>
+	// Stubs to let real OpenGL libs compile with minimal modifications/ifdefs
+	// add what you need
+
+	void glGetDoublev(GLenum pname, GLdouble* params) { }
+	void glGetInteger64v(GLenum pname, GLint64* params) { }
+
+
+	void glGetProgramiv(GLuint program, GLenum pname, GLint* params) { }
+	void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei* length, GLchar* infoLog) { }
+	void glAttachShader(GLuint program, GLuint shader) { }
+	void glCompileShader(GLuint shader) { }
+	void glGetShaderInfoLog(GLuint shader, GLsizei maxLength, GLsizei* length, GLchar* infoLog) { }
+	void glLinkProgram(GLuint program) { }
+	void glShaderSource(GLuint shader, GLsizei count, const GLchar** string, const GLint* length) { }
+	void glGetShaderiv(GLuint shader, GLenum pname, GLint* params) { }
+	void glDeleteShader(GLuint shader) { }
+	void glDetachShader(GLuint program, GLuint shader) { }
+
+	GLuint glCreateProgram() { return 0; }
+	GLuint glCreateShader(GLenum shaderType) { return 0; }
+	GLint glGetUniformLocation(GLuint program, const GLchar* name) { return 0; }
+	GLint glGetAttribLocation(GLuint program, const GLchar* name) { return 0; }
+
+	GLboolean glUnmapBuffer(GLenum target) { return GL_FALSE; }
+	GLboolean glUnmapNamedBuffer(GLuint buffer) { return GL_FALSE; }
+
+	// TODO
+	void glLineWidth(GLfloat width) { }
+
+	void glActiveTexture(GLenum texture) { }
+	void glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params) { }
+
+	void glUniform1f(GLint location, GLfloat v0) { }
+	void glUniform2f(GLint location, GLfloat v0, GLfloat v1) { }
+	void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) { }
+	void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) { }
+
+	void glUniform1i(GLint location, GLint v0) { }
+	void glUniform2i(GLint location, GLint v0, GLint v1) { }
+	void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) { }
+	void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) { }
+
+	void glUniform1ui(GLuint location, GLuint v0) { }
+	void glUniform2ui(GLuint location, GLuint v0, GLuint v1) { }
+	void glUniform3ui(GLuint location, GLuint v0, GLuint v1, GLuint v2) { }
+	void glUniform4ui(GLuint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3) { }
+
+	void glUniform1fv(GLint location, GLsizei count, const GLfloat* value) { }
+	void glUniform2fv(GLint location, GLsizei count, const GLfloat* value) { }
+	void glUniform3fv(GLint location, GLsizei count, const GLfloat* value) { }
+	void glUniform4fv(GLint location, GLsizei count, const GLfloat* value) { }
+
+	void glUniform1iv(GLint location, GLsizei count, const GLint* value) { }
+	void glUniform2iv(GLint location, GLsizei count, const GLint* value) { }
+	void glUniform3iv(GLint location, GLsizei count, const GLint* value) { }
+	void glUniform4iv(GLint location, GLsizei count, const GLint* value) { }
+
+	void glUniform1uiv(GLint location, GLsizei count, const GLuint* value) { }
+	void glUniform2uiv(GLint location, GLsizei count, const GLuint* value) { }
+	void glUniform3uiv(GLint location, GLsizei count, const GLuint* value) { }
+	void glUniform4uiv(GLint location, GLsizei count, const GLuint* value) { }
+
+	void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix2x3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix3x2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix2x4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix4x2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix3x4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+	void glUniformMatrix4x3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) { }
+
+
+	</code></pre>
+	</li>
+	<li><b>x86 architecture</b> uses little endianess (<i>Least Significant Byte</i> stored in the lowest memory address) while <b>TPC/IP headers</b> uses big endianess (<i>Most Significant Byte</i> stored on 
+	lowest memory address)</li>
+	<li>Remove the console window programmatically: <b>#pragma comment(linker, "/subsystem:\"windows\" "/entry:\"mainCRTStartup\")</b></li>
+	<li>You can choose the UNICODE version of a program runtime by adding - <b>#define UNICODE</b> (win32 runtime) and <b>#define _UNICODE</b> (C runtime). (strings then needs L"")</li>
+	<li>Strip a lot of unnessacery libs with <b>#define WIN32_MEAN_AND_LEAN</b> and <b>VC_EXTRALEAN</b>.</li>
+	<li>Select the GPU by adding these lines: 
+	<b><br/><pre><code>
+	#ifdef _WIN32
+	#include &lt;windows.h&gt;
+	extern "C" {
+		__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+		__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 0x00000001;;
+	}
+	<i>// Or on one line each</i>: extern "C" __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	#endif
+	</code></pre></b>
+	</li>
+	<li>Undefine unused params in the <b>WinMain</b> with <b>UNREFERENCED_PARAMETER(eg. <i>lpCmdLine</i>)</b></li>
+	<li>Defining compiler version and adding additional libs programmatically
+	<pre><code>
+	#ifdef _MSC_VER                         // Check if MS Visual C compiler
+	#  include &lt;windows.h&gt;			// Only include the windows headers if compiling for Windows
+	#  pragma comment(lib, "opengl32.lib")  // Compiler-specific directive to avoid manually configuration
+	#  pragma comment(lib, "glu32.lib")     // Link libraries
+	#endif
+	</code></pre>
+	</li>
+	<li>
+	Assuming readers are familiar with binary representation, LOWORD & HIWORD are macros for retrieving specific bits of wParam. Using bitwise operators, the LOWORD macro can be seen as:
+
+	<pre><code>#define LOWORD(l) ((WORD)(((DWORD_PTR)(l)) & 0xffff))</code></pre>
+	The HIWORD macro is defined as:
+
+	<pre><code>#define HIWORD(l) ((WORD)((((DWORD_PTR)(l)) >> 16) & 0xffff))</code></pre>
+	</li>
+	<li><p>Test if window is in focus and is active, otherwise this is where to handle pausing</p>
+	<pre><code>
+	case WM_ACTIVATE:		// Watch For Window Activate Message
+        {
+            if (!HIWORD(wParam))	// Check Minimization State
+            {
+                active=TRUE;		// Program Is Active
+            }
+            else
+            {
+                active=FALSE;		// Program Is No Longer Active
+            }
+            return 0;			// Return To The Message Loop
+	}
+	</code></pre>
+	</li>
+	<li>
+	<pre><code>
+	case WM_SYSCOMMAND:			//Intercept System Commands
+	{
+		switch (wParam)			//Check System Calls
+		{
+			case SC_SCREENSAVE:	//Screensaver Trying To Start?
+			case SC_MONITORPOWER:	//Monitor Trying To Enter Powersave?
+			return 0;		//Prevent From Happening
+		}
+		break;				//Exit
+	}
+	</code></pre>
+	</li>
+	<li>
+	<pre><code>
+	bool	keys[256];		//Array Used For The Keyboard Routine
+	bool	active=TRUE;		//Window Active Flag Set To TRUE By Default
+	...
+	
+	case WM_KEYDOWN:		//Is A Key Being Held Down?
+	{
+		keys[wParam] = TRUE;	//If So, Mark It As TRUE
+		return 0;		//Jump Back
+	}
+
+	case WM_KEYUP:			//Has A Key Been Released?
+	{
+		keys[wParam] = FALSE;	//If So, Mark It As FALSE
+		return 0;		//Jump Back
+	}
+	</code></pre>
+	</li>
+	<li> Also this to set various options (tweak as needed)
+	<pre><code>
+	#ifdef _MSC_VER        // Check if MS Visual C compiler
+	#   ifndef _MBCS
+	#      define _MBCS    // Uses Multi-byte character set
+	#   endif
+	#   ifdef _UNICODE     // Not using Unicode character set
+	#      undef _UNICODE 
+	#   endif
+	#   ifdef UNICODE
+	#      undef UNICODE 
+	#   endif
+	#endif
+	</code></pre>
+	</li>
+	<li>
+	<p>Endianess conversion in GCC compilers (Source: r/TheDefault8 in <a href="https://www.reddit.com/r/opengl/comments/pr9zlh/integer_texture_not_rendering/" target="_blank">https://www.reddit.com/r/opengl/comments/pr9zlh/integer_texture_not_rendering/</a>)</p>
+	<pre><code>
+	#if (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || \
+		(defined(BYTE_ORDER) && BYTE_ORDER == LITTLE_ENDIAN) || \
+		defined(__LITTLE_ENDIAN__) || \
+		defined(_MSC_VER) || \
+		defined(__ARMEL__) || \
+		defined(__THUMBEL__) || \
+		defined(__AARCH64EL__) || \
+		defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__)
+	#   define BO_LITTLE_ENDIAN 1
+	#else
+	#   define BO_LITTLE_ENDIAN 0
+	#endif
+
+	uint32_t htonl(uint32_t x)
+	{
+		#if BO_LITTLE_ENDIAN
+			uint8_t *s = (uint8_t *)&x;
+			return (uint32_t)(s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3]);
+		#else
+			return x;
+		#endif
+	}
+
+	uint16_t htons(uint16_t x)
+	{
+		#if BO_LITTLE_ENDIAN
+			uint8_t *s = (uint8_t *)&x;
+			return (uint16_t)(s[0] << 8 | s[1]);
+		#else
+			return x;
+		#endif
+	}
+	</code></pre>
+	</li>
+	<li>
+	<p>Big endianess for older GCC compilers:</p>
+	<pre><code>
+	You may try __BIG_ENDIAN__ or __BIG_ENDIAN or _BIG_ENDIAN which are often defined on big endian compilers.
+
+	This will improve detection. But if you specifically target PowerPC platforms, you can add a few more tests to improve even more detection. Try _ARCH_PPC or __PPC__ or __PPC or PPC or __powerpc__ 
+	or __powerpc or even powerpc. Bind all these defines together, and you have a pretty fair chance to detect big endian systems, and powerpc in particular, whatever the compiler and its version.
+	</code></pre>
+	</li>
+	<li>
+	<p>Contra questions (Source: <a href="https://stackoverflow.com/questions/8978935/detecting-endianness" target="_blank">https://stackoverflow.com/questions/8978935/detecting-endianness</a>)</p>
+	<pre><code>
+	Instead of looking for a compile-time check, why not just use big-endian order (which is considered the "network order" by many) and use the htons/htonl/ntohs/ntohl functions provided by 
+	most UNIX-systems and Windows. They're already defined to do the job you're trying to do. Why reinvent the wheel?
+	</code></pre>
+	</li>
+	<li>
+	<p>Boost-like C alternatives</p>
+	<pre><code>
+	<a href="https://docs.gtk.org/glib/" target="_blank">https://docs.gtk.org/glib/</a>
+	<a href="http://apr.apache.org/" target="_blank">http://apr.apache.org/</a>
+	<a href="https://www.hpl.hp.com/personal/Hans_Boehm/gc/" target="_blank">https://www.hpl.hp.com/personal/Hans_Boehm/gc/</a>
+	</code></pre>
+	</li>
+	<li>
+	<p>Collision detection</p>
+	<pre><code>
+	auto verts = sceneObject->getEditVerts();
+	auto norms = sceneObject->getEditNorms();
+	auto triangleInds = mesh->getCount();
+	int numTrid = triangleInds->getCount();
+	
+	uint3 *triData = (uint3 *)triangleInds->getData();
+	float3 *vertsData = *(float3 *)verts->getData();
+	float3 *normsData = *(float3 *)norms->getData();
+	
+	// for each triangle in the collision geometry
+	for (int i = 0; i < numTris; i++) {
+		bool outsidePlane = false;
+		bool outsideAllVerts = false;
+		bool outsideAllEdges = false;
+		
+		float v1 = vertsData[triData[i].x];
+		float v2 = vertsData[triData[i].y];
+		float v3 = vertsData[triData[i].z];
+		
+		// Assume flat normals for collision (all 3 n would be the same)
+		float pN = (float4)(normsData[triData[i].x].normalized(), 0.0f)).xyz();
+		
+		// only test for vertical polygons
+		if (fabs(pN.y) > 0.1f)
+			continue;
+			
+		float d = -((v1 + v2 + v3) / 3.0f).dot(pN);
+		
+		// get point-to-plane distance from model center
+		float ppd = pN.dot(collSphereOrigin) + d;
+		
+		if (ppd > collSphereRadius)
+		{
+			outsidePlane = true;
+			continue;
+		}
+	}
+	</code></pre>
+	<pre><code>
+	This is a rather simple formula for point-plance distance with plance equation
+	
+	<b>Ax+By+Cz+0=e</b>
+	
+	<b>Distance</b> = (A*x0+B*y0+C*z0+D)/sqrt(A*A+B*B+C*C)
+	
+	where (x0, y0, z0) are point coordinates. If your plane is normal vector (A, B, C) is normalized (unit), then denominator may be omitted.
+	
+	(A sign of distance usually is not important for interesection purposes
+	</code></pre>
+	<pre><code>
+	static bool intersectRaySegmentSphere(float 3 0, float3 d, float3 so, float radius2, float &ip)
+	{
+		// we pass in d non-normalized to keep it's length
+		// then we use the length later to compare the intersection point to make sure 
+		// we're within the actual ray segment
+		float l = d.length();
+		d /= l;
+		
+		float3 m = o - so;
+		float b = m.dot(d);
+		float c = m.dot(m) - radius2;
+		
+		// Exit if r's origin outside s (c > 0) and r poiting away from s (b > 0)
+		if (c > 0.0f && b > 0.0f)
+			return false;
+		float discr = b * b - c;
+		
+		// A negative discriment corresponds to ray missing sphere
+		if (discr < 0.0f)
+			return false;
+			
+		// Ray now found to intersect sphere, compute smallest t value of intersection
+		float t = -b - sqrtf(discr);
+		
+		// If t is negative, ray started inside shpere so clamp t to zero
+		if (t < 0.0f)
+			t = 0.0f;
+		ip = o + (d * t);
+		
+		if (t > 1)
+			return false;
+		return true;
+	}
+	</pre></code>
+	<pre><code>
+	bool outsideV1 = ((v1-collSphereOrigin).lengthSquared() > collSphereRadius2));
+	bool outsideV2 = ((v2-collSphereOrigin).lengthSquared() > collSphereRadius2));
+	bool outsideV3 = ((v3-collSphereOrigin).lengthSquared() > collSphereRadius2));
+	
+	if (outsideV1 && outsideV2 && outsideV3) {
+		// Sphere outside of all triangle vertices
+		outsideAllVerts = true;
+	}
+	
+	// build 3 rays (line segments)
+	float3 a = v2-v1;
+	float3 b = v3-v2;
+	float3 c = v1-v3;
+	
+	float3 ip;
+	
+	if(!intersectRaySegmentSphere(v1, a, collSphereOrigin, collSphereRadius2, ip) &&
+	   !intersectRaySegmentSphere(v2, b, collSphereOrigin, collSphereRadius2, ip) &&
+	   !intersectRaySegmentSphere(v3, c, collSphereOrigin, collSphereRadius2, ip))
+	{
+		outsideAllEdges = true;
+	}
+	
+	if (outsideAllVerts && outsideAllEdges) {
+		continue;
+	}
+	
+	sceneObject->getMeshes()[0]->getMaterial()->setDiffuse(float4(1, 0, 0, 1));
+	
+	// push the character (us) outside of the intersected body
+	shiftDelta += pN*(collSphereRadius-ppd);
+	numCollisions++;
+	
+	// This is on indention lower then the above code (in the functions global scope)
+	if (numCollisions != 0) {
+		shiftDelta /= (float)numCollisions;
+		
+		if (shiftDelta.length() > lastWalkSpeed)
+		{
+			shiftDelta = shiftDelta.normalized();
+			shiftDelta *= lastWalkSpeed*1.1f;
+		}
+	}
+	
+	model->setPos(model->getPos() + shiftDelta);
+	
+	</pre></code>
+	</li>
+	<li>
+	<pre><code>
+	One of the simplest formulas or expressions possible is the cosine of a linear argument. Popular wisdom (especially between old-school coders) is that trigonometric functions are expensive and that 
+	therefore it is important to avoid them (by means of LUTs or linear/triangular approximations). Often popular wisdom is wrong - despite the above still holds true in some especial cases (a CPU heavy 
+	inner loop) it does not in general: for example, in the GPU, computing a cosine is way, way faster than any attempt to approximate it. So, lets take advantage of this and go with the straight cosine expresion:
+
+	color(t) = a + b * cos[2PI(c * t + d)]
+	
+	Example: 
+	// cosine based palette, 4 vec3 params
+	vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
+	{
+		return a + b*cos( 6.28318*(c*t+d) );
+	}
+	</code></pre>
+	</li>
+	<li>
+	<pre><code>
+	<b>r/Lumornys</b> 
+	If you're going to cover both fixed-function and programmable pipeline, you can make a sort of history lesson on what was introduced when - glBegin/glEnd in 1.0, arrays in 1.1, VBO in 1.5, shaders in 2.0 
+	(with slightly different syntax), then deprecating old stuff in 3.0, etc.
+
+	There seem to be misconceptions in some tutorials about what is "old" and what is "new", as if before "modern" OpenGL 3.0 there was nothing but 1.0. In fact, the transition was a lot more gradual.
+	</code></pre>
+	</li>
+	<li>Consider this approch for folder structure:
+	<pre><code>
+	├── src
+	│   ├── base
+	│   │   └── render.ts
+	│   ├── core
+	│   │   ├── camera
+	│   │   │   └── camera.ts
+	│   │   ├── cutscene
+	│   │   │   └── cutscene.ts
+	│   │   ├── debug
+	│   │   │   └── debug.ts
+	│   │   ├── gameobjects
+	│   │   │   ├── circle.ts
+	│   │   │   ├── gameObject.ts
+	│   │   │   ├── rect.ts
+	│   │   │   ├── roundrect.ts
+	│   │   │   └── sprite.ts
+	│   │   ├── game.ts
+	│   │   ├── group
+	│   │   │   └── group.ts
+	│   │   ├── input
+	│   │   │   └── input.ts
+	│   │   ├── interactive
+	│   │   │   └── text.ts
+	│   │   ├── lights
+	│   │   │   └── staticLight.ts
+	│   │   ├── loader
+	│   │   │   └── loader.ts
+	│   │   ├── map
+	│   │   │   └── tilemap.ts
+	│   │   ├── math
+	│   │   │   └── clamp.ts
+	│   │   ├── particles
+	│   │   │   ├── particleEmitter.ts
+	│   │   │   └── particle.ts
+	│   │   ├── physics
+	│   │   │   ├── circleToRectIntersect.ts
+	│   │   │   ├── collider.ts
+	│   │   │   └── rectToRectIntersect.ts
+	│   │   ├── scene.ts
+	│   │   ├── sound
+	│   │   │   └── sound.ts
+	│   │   └── storage
+	│   │       └── storage.ts
+	│   ├── helper
+	│   │   └── color
+	│   │       ├── getValuesHSL.ts
+	│   │       ├── getValuesRGB.ts
+	│   │       ├── hexToHSL.ts
+	│   │       ├── hexToRGBA.ts
+	│   │       ├── hexToRGB.ts
+	│   │       ├── hslaToRGBA.ts
+	│   │       ├── hslToRGB.ts
+	│   │       ├── isHex.ts
+	│   │       ├── isHSL.ts
+	│   │       ├── isRGB.ts
+	│   │       ├── randomColor.ts
+	│   │       ├── rgbaToHSLA.ts
+	│   │       ├── rgbaToRGB.ts
+	│   │       ├── rgbToHSL.ts
+	│   │       └── rgbToRGBA.ts
+	│   ├── index.ts
+	│   └── utils
+	│       ├── randomInt.ts
+	│       └── validURL.ts
+	</code></pre>
+	</li>
+	<li> Text on screen formatting
+	<pre><code>
+	 // update VBO for each character
+	float vertices[6][4] = {
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos,     ypos,       0.0f, 1.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+		{ xpos + w, ypos + h,   1.0f, 0.0f }
+	};
+	</code></pre>
+	</li>
+	<li>Extend the client area into the main window (add buttons to the top row, above the filemenu): <a href="https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmextendframeintoclientarea?redirectedfrom=MSDN" target="_blank">https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmextendframeintoclientarea?redirectedfrom=MSDN</a>
+	<li>Read up on WinML and DirectML</li>
+	<li>WinML alternative: <a href="https://github.com/libfann/fann" target="_blank">https://github.com/libfann/fann</a></li>
+	<li>Advice on Enemy AI: Decision trees of some kind and path finding/search algorithms...</li>
+	<li>Quest design thread: <a href="https://www.reddit.com/r/gamedesign/comments/ocbvpc/quest_design_what_really_makes_good_quest_design/" target="_blank">https://www.reddit.com/r/gamedesign/comments/ocbvpc/quest_design_what_really_makes_good_quest_design/</a>
+	<pre><code><p>r/Eklundz</p>
+	My thoughts on good quest design:
+
+	Meaningful: no “kill 5 rats” quests, proper stuff.
+	Multiple solutions: This is something 99% of all games fail at. A good quest need to have 2-3 different solutions, otherwise it will just feel like a mandatory railroad.
+	Challenging: If a quest is not challenging its pointless.
+	It should lead to something: A good quest leads to something new, it’s not just an isolated event. There are a few different examples here, World Of Warcraft have quests the devs call 
+	“bread crumb quests” that lead the player to a new zone by giving them a letter or something to deliver to the captain of the guard in a fort in the next zone, or something similar. 
+	These quests might not be challenging but they feel meaningful because you start a journey and go to explore new things. Another example would be a quest that changes the state of the world, 
+	like siege quests in Skyrim where the city changes ruler after you finish it.
+	
+	Those are my thoughts.
+	
+	<p>r/therooseisloose578</p>
+	...
+	
+	Most of the time you can break quests into two things. The actions that the player needs to take in order to complete the quest, and the narrative context/wrapper to the quest. For the actions, 
+	that relates to the "puzzle" aspect that you are talking about. Some people like puzzles so then that would be a good quest for them. The narrative context relates to pretty much everything else 
+	your talking about. So that's the story, and why you're doing what you're doing. What you refer to as "player expression" is actually commonly referred to as "player agency" and studies have shown 
+	that players enjoy quests more if there is high percieved player agency.
+	
+	...
+	
+	<p>r/Xolarix</p>
+	...
+	
+	Very rarely is it a singular quest, most of them are actually questlines, where you complete multiple tasks, and there is an overarching story in the questline. And it's not just a single side 
+	quest that branches off from the main story, but there are literally dozens of side quests and each of them take like 15-30 minutes to complete, which is why that game is so immersive.
+	
+	...
+	
+	So I'd say it's a combination of good writing, and interesting unique mechanics for quests that force the player to do something new, or use the knowledge they already had in a new way, 
+	or where using that mechanic doesn't have the expected outcome for that quest.
+	
+	...
+	</code></pre>
+	</li>
+	<li>
+	<a href="https://www.reddit.com/r/C_Programming/comments/oqh7dr/how_to_convert_a_signed_32_bit_int_to_a_signed_16/" target="_blank">https://www.reddit.com/r/C_Programming/comments/oqh7dr/how_to_convert_a_signed_32_bit_int_to_a_signed_16/</a>
+	<pre><code>
+	maep 16 poeng 4 timer siden* 
+	Hi, (ex) professional audio dev here. Unless you work with embedded audio, the common practice is to convert your samples to float, normalized to [-1, 1]. That makes writing filters much easier and 
+	you no longer have to think about scaling issues, but be warned that you might run into denormals.
+
+	When mixing two channels in s16 you could to a right-shift (which acts as x * 0.5) before to avoid clipping. The problem with that method is that it doesn't preserverve loudness. The correct approach 
+	for uncorrelated signals is multiplying with 1/sqrt(2) [1] which approximates to (x * 0.7), but then you might get clipping.
+
+	Most fixed point DSPs support saturation arithmetic which deals with clipping issues, but on desktop CPUs you have to do that manually.
+
+	With all that being said, to mix two uncorrelated 16-bit samples, a and b, in fixed-point:
+
+	int16_t mix(int16_t a, int16_t b) {
+		// mix samples
+		int32_t x = (int32_t)a + (int32_t)b;
+		// multiply with 1/sqrt(2) in Q15 [2]
+		// x = (x * 23170) >> 15; // using arithmeric right shift
+		// u/richardxday pointed out that ARS is not ideal, and afaik implementation defined
+		// div is better and on modern compilers equally fast
+		x = (x * 23170) / 32768;
+		// clip output
+		x = x < INT16_MIN ? INT16_MIN : 
+			x > INT16_MAX ? INT16_MAX : x;
+		return (int16_t)x;
+	}
+	As you can see in compiler explorer, the div is turned into a sar instruction: https://godbolt.org/z/3sohca9oj
+
+	If you want to get deeper into this topic, I highly recommend reading this free book: http://www.dspguide.com/pdfbook.htm
+	<pre><code>
+	richardxday 5 poeng 2 timer siden 
+	Just a small point, I'd recommend avoiding ASR's if possible because they round asymmetrically (towards -ve infinity). A right shift is equivalent to a divide for positive numbers and not equivalent for negative numbers.
+
+	For example:
+
+	5 >> 1 = 2
+
+	-5 >> 1 = -3
+
+	This means you'll get different results for your sqrt(.5) gain for +ve and -ve numbers.
+
+	I'd suggest sticking with a divide unless performance *requires* a faster method.
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]maep 3 poeng 2 timer siden 
+	Good point. I also skipped rounding (adding 0.5 or 16384 in Q15) to keep it a bit simpler.
+
+	The thing is, we're talking about the least significant bit here, which is inaudable noise at -96 dB. For all practical intents and purpose this is good enough.
+	</code></pre>
+	
+	<pre><code>
+	Jorengarenar 17 poeng 9 timer siden* 
+	Sint16
+
+	Why aren't you using standard's fixed width integers from stdint.h header?
+
+	Is it possible the sign bit is getting discarded doing it this way?
+
+	32-bit integer -32768 would be represented in binary using two's complement as:
+
+	1111 1111 1111 1111 1000 0000 0000 0000
+	If we now "cut" it down to 16-bit we get: 1000 0000 0000 0000, which is still -32768
+
+	permalenkeembedlagrerapportergive awardsvar
+
+	[–]DeeBoFour20[S] 11 poeng 9 timer siden 
+	Sint16 is from SDL. This code is in an SDL callback function so I'm just using that here.
+
+	I guess I'm good then regarding the cast to 16 bit. I assume that also holds true for any negative value larger than -32768?
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]Beliriel 2 poeng 6 timer siden 
+	int32_t -65536 would get casted to int16_t 0 though if understood that right.
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]Selacios 4 poeng 6 timer siden 
+	Yes, although officially signed downcasting in C is implementation-defined, so the actual behavior depends on the compiler.
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]Beliriel 0 poeng 5 timer siden 
+	What about
+	((x &gt;&gt; 16) & -32768) & ( x & 32767)
+
+	x being an int32.
+	Then you can basically just cut off the top two bytes and still get the signed remainder &lt; 65536 correctly no. Did I oversee something?
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]Selacios 1 poeng 2 timer siden 
+	The minimum int32_t, -2^31, has binary
+
+	10000000000000000000000000000000
+
+	Using your suggested code, it would become
+
+	1000000000000000
+
+	by taking the bottom 15 bits of the original plus the sign bit of the original. This is actually min int16_t, -2^15.
+
+	However, these two actually have different signed remainders mod 65536 (the original has mod 0, the new number has mod -32768). I think what you're looking for is the simpler
+
+	x & 65535
+
+	which works because every bit above bit 15 represents a power of 2 which is 65536 or greater, hence does not contribute to the mod 65536 in any way.
+
+
+	[–]Beliriel 1 poeng 22 minutter siden 
+	Mod can be negative? That's pretty funky. Yes my intention was casting it (or rather truncating the number) without losing the sign.
+	</code></pre>
+	
+	<pre><code>
+	I know noise with an amplitude of -96dB FS doesn't sound like much (see what I did there?) but it is FS so may be a lot higher wrt the signal. Also, it's correlated noise so is distinctly less pleasant than 
+	uncorrelated noise.
+
+	Finally, considering that dithering is often applied to 24 bit signals, 1 bit correlated noise on 16-bit signals is probably worthwhile doing something about, especially since it's so easy.
+
+	Granted, dithering is a whole other subject but my point is that for a simple change you can eliminate a source of noise.
+
+	As for rounding, a trick is to solve both problems at once with:
+
+	/*--------------------------------------------------------------------------------*/
+	/*
+	* Mix two uncorrelated 16-bit samples * * @param a sample a * @param b sample b * 
+	* @return mix of a and b with a gain of -3dB, rounded to nearest (away from zero) / 
+	/--------------------------------------------------------------------------------*/ 
+	int16_t mix(int16_t a, int16_t b) { // add samples, multiply by numerator of -3dB gain int32_t sample32 = ((int32_t)a + (int32_t)b) * 23170;
+
+	// bias the sample32 value to round to nearest (away from zero) *and*
+	// to compensate for -ve bias of ASR (biases in LSBs):
+	// sign | bias for ASR | bias for RTN | total bias
+	// +ve  |      0       |      .5      |     .5
+	// -ve  |     .5       |     -.5      |      0
+	// LSB in this case is 32768 so .5 * LSB = 16384
+	sample32 += (sample32 >= 0) ? 16384 : 0;
+
+	// perform ASR for denominator of -3dB gain (which will now be unbiased because of the above)
+	sample32 >>= 15;
+
+	// limit at 16-bit limits
+	sample32 = (sample32 < -32768) ? -32768 : ((sample32 > 32767) ? 32767 : sample32);
+
+	// return cast version
+	return (int16_t)sample32;
+	}
+
+	(I've just rustled up above so it's untested!)
+
+	permalenkeembedlagreforeldrerapportergive awardsvar
+
+	[–]capilot 1 poeng 2 timer siden 
+	I didn't know about multiplying by √2 before, but I guess it makes sense.
+
+	I've also heard that dithering is a good idea; that is, adding white noise in [-16384 16384] before converting back to int16.
+	</code></pre>
+	</code></pre>
+	<a href="https://factualaudio.com/post/sum/" target="_blank">https://factualaudio.com/post/sum/</a>
+	</li>
+	<li>
+	<p>How exactly do modern widget toolkits (GTK+, QT) draw widgets?</p>
+	<p>jtsiomb 6 poeng en time siden 
+		There are two schools of thought when it comes to implementing widget toolkits. One is that every widget is a window, and the top-level window is a parent of a whole hierarchy. 
+		The other is that the toolkit creates only top-level windows, and everything else is drawin inside that top-level window by the toolkit itself.
+
+		Older systems like Motif and Win32 "controls" follow the first approach. GTK and Qt are complicated. For GTK I think it depends on the "engine" you have selected. The default 
+		GTK "engine" I think also uses subwindows for widgets, but most of the shinier rounder-er engines are probably drawing everything on a pixmap.
+
+		Rounded corners are not an issue with either way, but they do require support from the X server in the first case. That support is widely available however, and it's called 
+		the X shape extension. You can have even top-level windows with arbitrary shapes. And you can even change that shape on the fly. See my "shapeblobs" hack: <a href="https://github.com/jtsiomb/shapeblobs" target="_blank">https://github.com/jtsiomb/shapeblobs</a> 
+		(video: <a href="https://www.youtube.com/watch?v=HwJhQEVdPOE" target="_blank">https://www.youtube.com/watch?v=HwJhQEVdPOE</a>)
+
+		Shadows of top-level windows are independent of GUI toolkit. They are handled by the desktop compositor if one is running. If one isn't running you generally can't have shadows 
+		(or at least semi-transparent fuzzy shadows) on top-level windows, because you can't have alpha blending with the rest of the desktop.
+
+		Shadows on widgets within a window require the second approach of drawing everything in the window by the toolkit. The compositor only touches top-level windows.</p>
+	</li>
+	<li>
+	<p>Physics Math: Spring suspension</p>
+	<pre><code>
+	<p>Hooke's Law:</p>
+	F=kx
+	"x" being the displacement and "k" being the multiplier for the strength of the spring.
+	<p>Hooke's Law including dampning</p>
+	F=kx-dv
+	"v" being the velocity and "d" being the multiplier for the strength of the damper
+	</code></pre>
+	</li>
+	<li>
+	<pre><code>
+	futurechiefexecutive til r/startups
+
+	kommenterdellagregjemgive awardrapportercrosspost
+	If you're anything like me, being more productive as a Founder is always an ongoing effort. Here's something I picked up a couple of months back that's helped me significantly:
+
+	Monday Morning
+
+	Start your day by writing down your answers to these three questions:
+
+	What are the top three things I want to accomplish this week?
+	What steps do I need to take to accomplish each of them?
+	What are the challenges or blockers that stand in my way?
+	Friday Afternoon
+
+	Come back to this and close the feedback loop with:
+
+	Compared to the priorities I set on Monday, how did I do?
+	What did I do well? What made me happy?
+	What didn't go as planned? Where can I improve?
+	You can do this on a notebook, Notion, or G-Docs if you're okay with manual upkeep. MyCheckins or Standuply work well as dedicated tools.
+
+	TL;DR - Plan each week, review it at the end, and improve the next week with lessons from the last.
+	</code></pre>
+	</li>
+</ul>
+
+
+
+<script>
+	const update = document.getElementById("update").innerText = "Timestamp needed..";
+	const images = document.querySelectorAll("img");
+	const source = document.querySelectorAll("pre");
+	const code = document.querySelectorAll("code");
+	const note = document.querySelectorAll("#note");
+	
+	// Read all tokens within <pre><code>
+	const tokens = [];
+	// Highlight reserved keywords, but scan entire line to remove notes etc.
+	const keywords = [
+		'#include', '#pragma', '#define',
+		'argc', 'argv[]',
+		'NULL', 'unsigned', 'typedef', 'struct', 'union', 'enum', 
+		'void', 'void*', 'void *', 
+		'char', 'char*', 'char *', 
+		'string',
+		'short', 'int', 'float', 'double', 'long',
+		'bool', 'true', 'false', 
+		'if', 'else if', 'else',
+		'for', 'do', 'while',
+		'switch', 'case',  
+		'//', '/*',	'*/', 
+		'default', 'return' 
+	];
+	let text = "";
+	//keywords.forEach(syntax_highlight, code);
+	
+	function show_images (img) {
+		let count = 0;
+		img.forEach(image => {
+			image.style.display = "block";
+			
+			if (image.style.width <= image.style.height) {
+				<!-- if (image.style.width % 2 !== 1) { -->
+					<!-- image.style.width = "570px"; -->
+				<!-- } else { -->
+					<!-- image.style.width = "640px; -->
+				<!-- } -->
+				count+=1;
+			} 
+			else if (image.style.width >= image.style.height) {
+				image.style.width = "720px";
+				count+=1;
+			}
+			<!-- console.log("ran", count); -->
+		});
+	}
+	function sourcecode (src) {
+		src.forEach(code => {
+			code.style.padding = "40px 24px";
+			code.style.background = "#F2EFEB";
+			code.style.color = "#003712";
+		});
+	}
+	// const words = Array.from(code, codeBlock => codeBlock.textContent.split(" "));
+	// will return an array of arrays of words for each <code> element. But since your keywords 
+	// array does contain just single words but also phrases, you'll probably have to go with a different approach. I assume that eventually you'll want 
+	// to wrap each keyword in a <span> element, is that correct?
+	
+	function syntax_highlight (syntax, src) {
+		// Split each word into an array
+		const words = Array.from(code, codeBlock => codeBlock.textContent.split(' ')); 		// List of words contains '\n', '\t' and ""
+		
+		// Iterates once per code block
+		for (let i = 0; i < words.length; i++) {
+			for (let index = 0; index < keywords.length; index++) {	
+				if (keywords[index] === words[i]) {
+					//console.log(`HI ${words[i]}`);
+					//console.log(`HELLO ${keywords[index]}`);
+					console.log("Match");
+				}
+				else {
+					//console.log("No match");
+				}
+				if (keywords[index] === words[i]) {
+					console.log(`${words[i]} === ${keywords[index]}`);
+				} 
+				else if (keywords[index] !== words[i]){
+					//console.log(`${keywords[index]}`);
+				}
+				//console.log(words[i], keywords[index]);				
+			}
+		}
+	}
+	function show_notes (src) {		
+		src.forEach(notes => {
+			//bold.style.color = "#000";
+			notes.style.padding = "42px 25px";
+			notes.style.background = "#F3AB8C";
+			notes.style.color = "#16161D"; // Eigengrau (the color you see in the absence of light)
+			notes.style.textShadow = "#B9C 0px 0px 1px";
+		});
+	}
+	
+	show_images(images);
+	sourcecode(source);
+	show_notes(note);
+	syntax_highlight(keywords, code);
+</script>
