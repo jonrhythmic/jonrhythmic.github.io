@@ -978,6 +978,8 @@ int initialize()
 }
 </code></pre>
 
+<p id="note">There is also a <b>GetDCEx(hwnd, hrgn, DCX_WINDOW | DCX_INTERSECTRGN | 0x10000);</b> to further control how the device context is handles...</p>
+
 <p>Then we implement a game loop to handle the OS messages and OpenGL rendering inside <b>WinMain</b>:</p>
 
 <pre><code>
@@ -2057,6 +2059,16 @@ void toggle_fullscreen(void)
 }
 </code></pre>
 
+<p id="note">
+	The Transformation Pipeline<br/>
+	<b>Object Space:</b> Initial transformation is called Object Space and hosts the objects local transformation.<br/>
+	<b>World Space:</b> To transform the object into the position relative to your world's origin it transforms the vertices using the model transform.<br/>
+	<b>Eye Space:</b> Multiplied by the view transform we get into the Eye Space.<br/>
+	<b>Clip Space:</b> Once the objects are culled acording to being visible on screen gives us the Clip Space.<br/>
+	<b>Normalized Device Coordinates:</b> Multiply the Clip Space by perspective division you get the NDC.<br/>
+	<b>Window Space</b>: This step takes the vertices and performs the rasterization to project the objects that are visible onto the screen.<br/>
+	<a href="https://openglbook.com/chapter-4-entering-the-third-dimension.html" target="_blank">https://openglbook.com/chapter-4-entering-the-third-dimension.html</a>
+</p>
 
 
 
@@ -2567,7 +2579,12 @@ glEnd();
  
 <p>If you don't see a texture on your quad try to convert the image you are using to the correct format with the right extension (<b>.BMP</b>) using your preferred image editor and try again!</p>
 
+<p id=note">The lower left corner of the texture is <b>{ 0, 0 }</b> in OpenGL. X direction is the U-coordinate, and Y direction is V-coordinate.</p>
 
+<h3>Applying different textures to multiple objects</h3>
+
+<p>If you want to load multiple textures you declare a new instance in <b>resource.h</b> pr texture and give multiple calls to <b>load_texture()</b> in the <b>initialize</b> function. Then you can assign them to each 
+primitive or model using <b>glBindTexture(GL_TEXTURE_2D, name_of_texture)</b>.</p>
 
 
 
@@ -2638,19 +2655,2795 @@ case WM_CREATE:
 <p>Following the clockwise direction.</p>
 
 <pre><code>
-(0, 1)									(1, 1)
+(0, 1)	       (1, 1)
   |
   1
   |
-(0, 0) 					-- 1 --				(1, 0)
+(0, 0) -- 1 -- (1, 0)
 </code></pre>
 
 
 
-<h1>LESSON 26 - </h1>
+<h1>LESSON 26 - Procedural Generation pt. 1</h1>
+<h3>Introduction</h3>
+<p>Matrix is not a formula</p>
+
+<h3>What is a matrix</h3>
+<p>Programmers should know how Matrixes and handled internally. Matrix can have two elements, the row and column</p>
+
+<p>The order of matrixes matter! If you multiply a translation matrix with a scale, or scale by a translation matrix will be different.</p>
+
+<p>Matrix makes representing 3D coordinates easy.</p>
+<p>Can be extended to represent n number of matrixes.</p>
+<p></p>
+<p></p>
+<p></p>
+
+<h3>Homogenous Coodinates</h3>
+<p>Can represent inifinity. (image a railway track going into the distance)</p>
+<p>Your screen is representing cartesian coords.</p>
+<p></p>
+<p></p>
+<p></p>
+
+<h3>OpenGL internal stacks...</h3>
+<p>OpenGL follows two stacks - View Stack <- (Projection Stack) and (Transformation Stack) -> Model Stack</p>
+<p>Projection stack stores the perspective, orthographic or lookAt matrix</p>
+<p>The second one stores the translation, rotation and scaling.</p>
+<p>OpenGL inplements it's own stack which represents both.</p>
+
+<h3>Unit Matrix / Identity Matrix </h3>
+<p></p>
+<p></p>
+
+<h3>Texture matrix<h3>
+<p>Your GPU has it's own dedicated texture memory.</p>
+<p></p>
+<p></p>
+
+<h3>More notes</h3>
+<p>Cartesian coordiantes: [2, 3]</p>
+<p>Homogenous coodinates: [2, 3, 1] = (x, y & z)</p>
+<p>Cartesian has no extra dimension, homogenous has an extra dimension - either 0 or 1.</p>
+<h3>Conversion to homogen to cartesian</h3>
+<p><var>x / w = 2 / 1 = 2</var></p>
+<p><var>y / w = 3 / 1 = 3</var></p>
+<h4>If w = 0</h4>
+<p><var>x = x / 0 = &rarr; infinity</var></p>
+<p><var>y = y / 0 = &rarr; infinity</var></p>
+
+<p></p>
+<pre><code>
+     _                 _
+m11 | 3.0    1.0    1.0 |    &uarr;
+m21 | 1.0    1.0    1.0	|  Column 
+m31 |_1.0    1.0   -0.5_|    &darr;
+           &larr; Row &rarr;
+</code></pre>
+
+<p>glTranslate(3.0f, 1.0f, -0.5f);</p>
+<p>glRotate(angle, 1.0f, 0.0f, 0.0f);</p>
+<p>glScale(5.0f, 5.0f, 5.0f);</p>
+<p>1) Row</p>
+<p>2) Column</p>
+<p>m11    m21</p>
+<p>RC     RC</p>
+<p>[T, R, S]</p>
+<p>Homogenous</p>
+<p>[5.0, -60.0, 0]</p>
+<p>  x     y    w</p>
+<p id="note">When converting to cartesian coords divided by zero makes infinity.</p>
+<p>Allowing affine transformation, rotation and scaling</p>
+<p>OpenGL loads two stacks internally: Unit matrix...</p>
+<pre></code>
+ _	   _
+| 1   0   0 |
+| 0   1   0 |  &rarr; glLoadIdentity()
+|_0   0   1_|
+</code></pre>
+
+<h3>quote from the OpenGL Superbible</h3>
+<pre><code>
+The Transformation Pipeline
+To effect the types of transformations described in this chapter, you modify two matrices
+in particular: the modelview matrix and the projection matrix. Don’t worry; OpenGL
+provides some high-level functions that you can call for these transformations. After
+you’ve mastered the basics of the OpenGL API, you will undoubtedly start trying some of
+the more advanced 3D rendering techniques. Only then will you need to call the lowerlevel functions that actually set the values contained in the matrices.
+The road from raw vertex data to screen coordinates is a long one. Figure 4.7 provides a
+flowchart of this process. First, your vertex is converted to a 1×4 matrix in which the first
+three values are the x, y, and z coordinates. The fourth number is a scaling factor that you
+can apply manually by using the vertex functions that take four values. This is the w coordinate, usually 1.0 by default. You will seldom modify this value directly.
+The Matrix: Mathematical Currency for 3D Graphics 135
+4
+1
+2
+3
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+0
+1.5
+2
+42
+0.877
+14
+FIGURE 4.7 The vertex transformation pipeline.
+The vertex is then multiplied by the modelview matrix, which yields the transformed eye
+coordinates. The eye coordinates are then multiplied by the projection matrix to yield clip
+coordinates. OpenGL effectively eliminates all data outside this clipping space. The clip
+coordinates are then divided by the w coordinate to yield normalized device coordinates.
+The w value may have been modified by the projection matrix or the modelview matrix,
+depending on the transformations that occurred. Again, OpenGL and the high-level
+matrix functions hide this process from you.
+Finally, your coordinate triplet is mapped to a 2D plane by the viewport transformation.
+This is also represented by a matrix, but not one that you specify or modify directly.
+OpenGL sets it up internally depending on the values you specified to glViewport.
+The Modelview Matrix
+The modelview matrix is a 4×4 matrix that represents the transformed coordinate system
+you are using to place and orient your objects. The vertices you provide for your primitives are used as a single-column matrix and multiplied by the modelview matrix to yield
+new transformed coordinates in relation to the eye coordinate system.
+In Figure 4.8, a matrix containing data for a single vertex is multiplied by the modelview
+matrix to yield new eye coordinates. The vertex data is actually four elements with an
+extra value, w, that represents a scaling factor. This value is set by default to 1.0, and rarely
+will you change it yourself.
+136 CHAPTER 4 Geometric Transformations: The Pipeline
+x0
+y0
+z0
+w0
+xe
+ye
+ze
+we
+xc
+yc
+zc
+wc
+xc/wc
+yc/wc
+zc/wc
+Modelview
+matrix
+Projection
+matrix
+Viewport
+transformation
+Perspective
+division …
+…
+Original
+vertex data
+Transformed
+eye coordinates
+Window coordinates
+Clip
+coordinates
+Normalized
+device coordinates
+FIGURE 4.8 A matrix equation that applies the modelview transformation to a single vertex.
+Translation
+Let’s consider an example that modifies the modelview matrix. Say you want to draw a
+cube using the GLUT library’s glutWireCube function. You simply call
+glutWireCube(10.0f);
+A cube that measures 10 units on a side is then centered at the origin. To move the cube
+up the y-axis by 10 units before drawing it, you multiply the modelview matrix by a
+matrix that describes a translation of 10 units up the y-axis and then do your drawing. In
+skeleton form, the code looks like this:
+// Construct a translation matrix for positive 10 Y
+...
+// Multiply it by the modelview matrix
+...
+// Draw the cube
+glutWireCube(10.0f);
+Actually, such a matrix is fairly easy to construct, but it requires quite a few lines of code.
+Fortunately, OpenGL provides a high-level function that performs this task for you:
+void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
+This function takes as parameters the amount to translate along the x, y, and z directions.
+It then constructs an appropriate matrix and multiplies it onto the current matrix stack.
+The pseudocode looks like the following, and the effect is illustrated in Figure 4.9:
+// Translate up the y-axis 10 units
+glTranslatef(0.0f, 10.0f, 0.0f);
+// Draw the cube
+glutWireCube(10.0f);
+The Matrix: Mathematical Currency for 3D Graphics 137
+4
+= M
+FIGURE 4.9 A cube translated 10 units in the positive y direction.
+IS TRANSLATION ALWAYS A MATRIX OPERATION?
+The studious reader may note that translations do not always require a full matrix multiplication,
+but can be simplified with a simple scalar addition to the vertex position. However, for more
+complex transformations that include combined simultaneous operations, it is correct to describe
+translation as a matrix operation. Fortunately, if you let OpenGL do the heavy lifting for you, as
+we have done here, the implementation can usually figure out the optimum method to use.
+Rotation
+To rotate an object about one of the three coordinate axes, or indeed any arbitrary vector,
+you have to devise a rotation matrix. Again, a high-level function comes to the rescue:
+glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+Here, we perform a rotation around the vector specified by the x, y, and z arguments. The
+angle of rotation is in the counterclockwise direction measured in degrees and specified by
+the argument angle. In the simplest of cases, the rotation is around only one of the coordinate systems cardinal axes (X, Y, or Z).
+You can also perform a rotation around an arbitrary axis by specifying x, y, and z values
+for that vector. To see the axis of rotation, you can just draw a line from the origin to the
+point represented by (x,y,z). The following code rotates the cube by 45° around an arbitrary axis specified by (1,1,1), as illustrated in Figure 4.10:
+// Perform the transformation
+glRotatef(45.0f, 1.0f, 1.0f, 1.0f);
+// Draw the cube
+glutWireCube(10.0f);
+138 CHAPTER 4 Geometric Transformations: The Pipeline
+z
+x
+y
+10
+FIGURE 4.10 A cube rotated about an arbitrary axis.
+Scaling
+A scaling transformation changes the size of your object by expanding or contracting all
+the vertices along the three axes by the factors specified. The function
+glScalef(GLfloat x, GLfloat y, GLfloat z);
+multiplies the x, y, and z values by the scaling factors specified.
+Scaling does not have to be uniform, and you can use it to both stretch and squeeze
+objects along different directions. For example, the following code produces a cube that is
+twice as large along the x- and z-axes as the cubes discussed in the previous examples, but
+still the same along the y-axis. The result is shown in Figure 4.11.
+// Perform the scaling transformation
+glScalef(2.0f, 1.0f, 2.0f);
+// Draw the cube
+glutWireCube(10.0f);
+The Matrix: Mathematical Currency for 3D Graphics 139
+4
+x
+(1,1,1)
+45
+z
+y
+z
+x
+y
+10
+10
+FIGURE 4.11 A nonuniform scaling of a cube.
+The Identity Matrix
+About now, you might be wondering why we had to bother with all this matrix stuff in
+the first place. Can’t we just call these transformation functions to move our objects
+around and be done with it? Do we really need to know that it is the modelview matrix
+that is modified?
+The answer is yes and no (but it’s no only if you are drawing a single object in your
+scene). The reason is that the effects of these functions are cumulative. Each time you call
+one, the appropriate matrix is constructed and multiplied by the current modelview
+matrix. The new matrix then becomes the current modelview matrix, which is then multiplied by the next transformation, and so on.
+Suppose you want to draw two spheres—one 10 units up the positive y-axis and one 10
+units out the positive x-axis, as shown in Figure 4.12. You might be tempted to write code
+that looks something like this:
+// Go 10 units up the y-axis
+glTranslatef(0.0f, 10.0f, 0.0f);
+// Draw the first sphere
+glutSolidSphere(1.0f,15,15);
+// Go 10 units out the x-axis
+glTranslatef(10.0f, 0.0f, 0.0f);
+// Draw the second sphere
+glutSolidSphere(1.0f);
+140 CHAPTER 4 Geometric Transformations: The Pipeline
+z
+x
+y
+10
+10
+FIGURE 4.12 Two spheres drawn on the y- and x-axes.
+Consider, however, that each call to glTranslate is cumulative on the modelview matrix,
+so the second call translates 10 units in the positive x direction from the previous translation in the y direction. This yields the results shown in Figure 4.13.
+The Matrix: Mathematical Currency for 3D Graphics 141
+4
+z
+x
+y
+10
+10
+FIGURE 4.13 The result of two consecutive translations.
+You can make an extra call to glTranslate to back down the y-axis 10 units in the negative direction, but this makes some complex scenes difficult to code and debug—not to
+mention that you throw extra transformation math at the CPU or GPU. A simpler method
+is to reset the modelview matrix to a known state—in this case, centered at the origin of
+the eye coordinate system.
+You reset the origin by loading the modelview matrix with the identity matrix. The identity
+matrix specifies that no transformation is to occur, in effect saying that all the coordinates
+you specify when drawing are in eye coordinates. An identity matrix contains all 0s, with
+the exception of a diagonal row of 1s. When this matrix is multiplied by any vertex
+matrix, the result is that the vertex matrix is unchanged. Figure 4.14 shows this equation.
+Later in the chapter, we discuss in more detail why these numbers are where they are.
+ 8 . 0
+ 4 . 5
+- 2 . 0
+ 1 . 0
+ 8 . 0
+ 4 . 5
+- 2 . 0
+ 1 . 0
+1.0
+0
+0
+0
+0
+1.0
+0
+0
+0
+0
+1.0
+0
+0
+0
+0
+1.0
+=
+FIGURE 4.14 Multiplying a vertex by the identity matrix yields the same vertex matrix.
+As we’ve already stated, the details of performing matrix multiplication are outside the
+scope of this book. For now, just remember this: Loading the identity matrix means that
+no transformations are performed on the vertices. In essence, you are resetting the
+modelview matrix to the origin.
+The following two lines load the identity matrix into the modelview matrix:
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+The first line specifies that the current operating matrix is the modelview matrix. After
+you set the current operating matrix (the matrix that your matrix functions are affecting),
+it remains the active matrix until you change it. The second line loads the current matrix
+(in this case, the modelview matrix) with the identity matrix.
+Now, the following code produces the results shown earlier in Figure 4.12:
+// Set current matrix to modelview and reset
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+// Go 10 units up the y-axis
+glTranslatef(0.0f, 10.0f, 0.0f);
+// Draw the first sphere
+glutSolidSphere(1.0f, 15, 15);
+// Reset modelview matrix again
+glLoadIdentity();
+// Go 10 units out the x-axis
+glTranslatef(10.0f, 0.0f, 0.0f);
+// Draw the second sphere
+glutSolidSphere(1.0f, 15, 15);
+The Matrix Stacks
+Resetting the modelview matrix to identity before placing every object is not always desirable. Often, you want to save the current transformation state and then restore it after
+some objects have been placed. This approach is most convenient when you have initially
+transformed the modelview matrix as your viewing transformation (and thus are no
+longer located at the origin).
+To facilitate this procedure, OpenGL maintains a matrix stack for both the modelview and
+projection matrices. A matrix stack works just like an ordinary program stack. You can
+push the current matrix onto the stack with glPushMatrix to save it and then make your
+changes to the current matrix. Popping the matrix off the stack with glPopMatrix then
+restores it. Figure 4.15 shows the stack principle in action.
+142 CHAPTER 4 Geometric Transformations: The Pipeline
+FIGURE 4.15 The matrix stack in action.
+TEXTURE MATRIX STACK
+The texture stack is another matrix stack available to you. You use it to transform texture coordinates. Chapter 8, “Texture Mapping: The Basics,” examines texture mapping and texture coordinates and contains a discussion of the texture matrix stack.
+The stack depth can reach a maximum value that you can retrieve with a call to either
+glGet(GL_MAX_MODELVIEW_STACK_DEPTH);
+or
+glGet(GL_MAX_PROJECTION_STACK_DEPTH);
+If you exceed the stack depth, you get a GL_STACK_OVERFLOW error; if you try to pop a
+matrix value off the stack when there is none, you generate a GL_STACK_UNDERFLOW error.
+The stack depth is implementation dependent. For the Microsoft software implementation, the values are 32 for the modelview and 2 for the projection stack.
+A Nuclear Example
+Let’s put to use what we have learned. In the next example, we build a crude, animated
+model of an atom. This atom has a single sphere at the center to represent the nucleus
+and three electrons in orbit about the atom. We use an orthographic projection, as we
+have in all the examples so far in this book.
+Our ATOM program uses the GLUT timer callback mechanism (discussed in Chapter 2,
+“Using OpenGL”) to redraw the scene about 10 times per second. Each time the
+RenderScene function is called, the angle of revolution about the nucleus is incremented.
+Also, each electron lies in a different plane. Listing 4.1 shows the RenderScene function
+for this example, and the output from the ATOM program is shown in Figure 4.16.
+The Matrix: Mathematical Currency for 3D Graphics 143
+4
+glPushMatrix glPopMatrix
+Matrix stack
+LISTING 4.1 RenderScene Function from ATOM Sample Program
+// Called to draw scene
+void RenderScene(void)
+{
+// Angle of revolution around the nucleus
+static GLfloat fElect1 = 0.0f;
+// Clear the window with current clearing color
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+// Reset the modelview matrix
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+// Translate the whole scene out and into view
+// This is the initial viewing transformation
+glTranslatef(0.0f, 0.0f, -100.0f);
+// Red Nucleus
+glColor3ub(255, 0, 0);
+glutSolidSphere(10.0f, 15, 15);
+// Yellow Electrons
+glColor3ub(255,255,0);
+// First Electron Orbit
+// Save viewing transformation
+glPushMatrix();
+// Rotate by angle of revolution
+glRotatef(fElect1, 0.0f, 1.0f, 0.0f);
+// Translate out from origin to orbit distance
+glTranslatef(90.0f, 0.0f, 0.0f);
+// Draw the electron
+glutSolidSphere(6.0f, 15, 15);
+// Restore the viewing transformation
+glPopMatrix();
+144 CHAPTER 4 Geometric Transformations: The Pipeline
+LISTING 4.1 Continued
+// Second Electron Orbit
+glPushMatrix();
+glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
+glRotatef(fElect1, 0.0f, 1.0f, 0.0f);
+glTranslatef(-70.0f, 0.0f, 0.0f);
+glutSolidSphere(6.0f, 15, 15);
+glPopMatrix();
+// Third Electron Orbit
+glPushMatrix();
+glRotatef(360.0f, -45.0f, 0.0f, 0.0f, 1.0f);
+glRotatef(fElect1, 0.0f, 1.0f, 0.0f);
+glTranslatef(0.0f, 0.0f, 60.0f);
+glutSolidSphere(6.0f, 15, 15);
+glPopMatrix();
+// Increment the angle of revolution
+fElect1 += 10.0f;
+if(fElect1 > 360.0f)
+fElect1 = 0.0f;
+// Show the image
+glutSwapBuffers();
+}
+The Matrix: Mathematical Currency for 3D Graphics 145
+4
+FIGURE 4.16 Output from the ATOM sample program.
+Let’s examine the code for placing one of the electrons, a couple of lines at a time. The first
+line saves the current modelview matrix by pushing the current transformation on the stack:
+// First Electron Orbit
+// Save viewing transformation
+glPushMatrix();
+Now the coordinate system appears to be rotated around the y-axis by an angle, fElect1:
+// Rotate by angle of revolution
+glRotatef(fElect1, 0.0f, 1.0f, 0.0f);
+The electron is drawn by translating down the newly rotated coordinate system:
+// Translate out from origin to orbit distance
+glTranslatef(90.0f, 0.0f, 0.0f);
+Then the electron is drawn (as a solid sphere), and we restore the modelview matrix by
+popping it off the matrix stack:
+// Draw the electron
+glutSolidSphere(6.0f, 15, 15);
+// Restore the viewing transformation
+glPopMatrix();
+The other electrons are placed similarly.
+Using Projections
+In our examples so far, we have used the modelview matrix to position our vantage point
+of the viewing volume and to place our objects therein. The projection matrix actually
+specifies the size and shape of our viewing volume.
+Thus far in this book, we have created a simple parallel viewing volume using the function
+glOrtho, setting the near and far, left and right, and top and bottom clipping coordinates.
+In OpenGL, when the projection matrix is loaded with the identity matrix, the diagonal
+line of 1s specifies that the clipping planes extend from the origin to +1 or –1 in all directions. The projection matrix by itself does no scaling or perspective adjustments unless
+you load a perspective projection matrix.
+The next two sample programs, ORTHO and PERSPECT, are not covered in detail from the
+standpoint of their source code. These examples use lighting and shading that we haven’t
+covered yet to help highlight the differences between an orthographic and a perspective
+projection. These interactive samples make it much easier for you to see firsthand how the
+projection can distort the appearance of an object. If possible, you should run these examples while reading the next two sections.
+146 CHAPTER 4 Geometric Transformations: The Pipeline
+Orthographic Projections
+The orthographic projection that we have used for most of this book so far is square on all
+sides. The logical width is equal at the front, back, top, bottom, left, and right sides. This
+produces a parallel projection, which is useful for drawings of specific objects that do not
+have any foreshortening when viewed from a distance. This is good for 2D graphics such
+as text, or architectural drawings for which you want to represent the exact dimensions
+and measurements onscreen.
+Figure 4.17 shows the output from the sample program ORTHO in this chapter’s subdirectory in the source distribution. To produce this hollow, tubelike box, we used an orthographic projection just as we did for all our previous examples. Figure 4.18 shows the same
+box rotated more to the side so you can see how long it actually is.
+Using Projections 147
+4
+FIGURE 4.17 A hollow square tube shown with an orthographic projection.
+FIGURE 4.18 A side view showing the length of the square tube.
+In Figure 4.19, you’re looking directly down the barrel of the tube. Because the tube does
+not converge in the distance, this is not an entirely accurate view of how such a tube
+appears in real life. To add some perspective, we must use a perspective projection.
+148 CHAPTER 4 Geometric Transformations: The Pipeline
+FIGURE 4.19 Looking down the barrel of the tube.
+Perspective Projections
+A perspective projection performs perspective division to shorten and shrink objects that
+are farther away from the viewer. The width of the back of the viewing volume does not
+have the same measurements as the front of the viewing volume after being projected to
+the screen. Thus, an object of the same logical dimensions appears larger at the front of
+the viewing volume than if it were drawn at the back of the viewing volume.
+The picture in our next example is of a geometric shape called a frustum. A frustum is a
+truncated section of a pyramid viewed from the narrow end to the broad end. Figure 4.20
+shows the frustum, with the observer in place.
+Observer
+Perspective viewing volume
+near
+0
+far
+FIGURE 4.20 A perspective projection defined by a frustum.
+You can define a frustum with the function glFrustum. Its parameters are the coordinates
+and distances between the front and back clipping planes. However, glFrustum is not as
+intuitive about setting up your projection to get the desired effects, and is typically used
+for more specialized purposes (for example, stereo, tiles, asymmetric view volumes). The
+utility function gluPerspective is easier to use and somewhat more intuitive for most
+purposes:
+void gluPerspective(GLdouble fovy, GLdouble aspect,
+GLdouble zNear, GLdouble zFar);
+Parameters for the gluPerspective function are a field-of-view angle in the vertical direction, the aspect ratio of the width to height, and the distances to the near and far clipping
+planes (see Figure 4.21). You find the aspect ratio by dividing the width (w) by the height
+(h) of the window or viewport.
+Using Projections 149
+4
+Observer
+near
+fovy
+h
+w
+far
+FIGURE 4.21 The frustum as defined by gluPerspective.
+Listing 4.2 shows how we change our orthographic projection from the previous examples
+to use a perspective projection. Foreshortening adds realism to our earlier orthographic
+projections of the square tube (see Figures 4.22, 4.23, and 4.24). The only substantial
+change we made for our typical projection code in Listing 4.2 was substituting the call to
+gluOrtho2D with gluPerspective.
+FIGURE 4.22 The square tube with a perspective projection.
+FIGURE 4.23 A side view with foreshortening.
+150 CHAPTER 4 Geometric Transformations: The Pipeline
+FIGURE 4.24 Looking down the barrel of the tube with perspective added.
+LISTING 4.2 Setting Up the Perspective Projection for the PERSPECT Sample Program
+// Change viewing volume and viewport. Called when window is resized
+void ChangeSize(GLsizei w, GLsizei h)
+{
+GLfloat fAspect;
+// Prevent a divide by zero
+if(h == 0)
+h = 1;
+// Set viewport to window dimensions
+glViewport(0, 0, w, h);
+LISTING 4.2 Continued
+fAspect = (GLfloat)w/(GLfloat)h;
+// Reset coordinate system
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+// Produce the perspective projection
+gluPerspective(60.0f, fAspect, 1.0, 400.0);
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+}
+We made the same changes to the ATOM example in ATOM2 to add perspective. Run the
+two side by side, and you see how the electrons appear to be smaller as they swing far
+away behind the nucleus.
+A Far-Out Example
+For a more complete example showing modelview manipulation and perspective projections, we have modeled the sun and the earth/moon system in revolution in the SOLAR
+sample program. This is a classic example of nested transformations with objects being
+transformed relative to one another using the matrix stack. We have enabled some lighting and shading for drama so that you can more easily see the effects of our operations.
+You’ll learn about shading and lighting in the next two chapters.
+In our model, the earth moves around the sun, and the moon revolves around the earth.
+A light source is placed at the center of the sun, which is drawn without lighting to make
+it appear to be the glowing light source. This powerful example shows how easily you can
+produce sophisticated effects with OpenGL.
+Listing 4.3 shows the code that sets up the projection and the rendering code that keeps
+the system in motion. A timer elsewhere in the program triggers a window redraw 10
+times a second to keep the RenderScene function in action. Notice in Figures 4.25 and
+4.26 that when the earth appears larger, it’s on the near side of the sun; on the far side, it
+appears smaller.
+LISTING 4.3 Code That Produces the Sun/Earth/Moon System
+// Change viewing volume and viewport. Called when window is resized
+void ChangeSize(GLsizei w, GLsizei h)
+{
+GLfloat fAspect;
+Using Projections 151
+4
+LISTING 4.3 Continued
+// Prevent a divide by zero
+if(h == 0)
+h = 1;
+// Set viewport to window dimensions
+glViewport(0, 0, w, h);
+// Calculate aspect ratio of the window
+fAspect = (GLfloat)w/(GLfloat)h;
+// Set the perspective coordinate system
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+// Field of view of 45 degrees, near and far planes 1.0 and 425
+gluPerspective(45.0f, fAspect, 1.0, 425.0);
+// Modelview matrix reset
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+}
+// Called to draw scene
+void RenderScene(void)
+{
+// Earth and moon angle of revolution
+static float fMoonRot = 0.0f;
+static float fEarthRot = 0.0f;
+// Clear the window with current clearing color
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+// Save the matrix state and do the rotations
+glMatrixMode(GL_MODELVIEW);
+glPushMatrix();
+// Translate the whole scene out and into view
+glTranslatef(0.0f, 0.0f, -300.0f);
+// Set material color, to yellow
+// Sun
+glColor3ub(255, 255, 0);
+152 CHAPTER 4 Geometric Transformations: The Pipeline
+LISTING 4.3 Continued
+glDisable(GL_LIGHTING);
+glutSolidSphere(15.0f, 15, 15);
+glEnable(GL_LIGHTING);
+// Position the light after we draw the Sun!
+glLightfv(GL_LIGHT0,GL_POSITION,lightPos);
+// Rotate coordinate system
+glRotatef(fEarthRot, 0.0f, 1.0f, 0.0f);
+// Draw the earth
+glColor3ub(0,0,255);
+glTranslatef(105.0f,0.0f,0.0f);
+glutSolidSphere(15.0f, 15, 15);
+// Rotate from Earth-based coordinates and draw moon
+glColor3ub(200,200,200);
+glRotatef(fMoonRot,0.0f, 1.0f, 0.0f);
+glTranslatef(30.0f, 0.0f, 0.0f);
+fMoonRot+= 15.0f;
+if(fMoonRot > 360.0f)
+fMoonRot = 0.0f;
+glutSolidSphere(6.0f, 15, 15);
+// Restore the matrix state
+glPopMatrix(); // Modelview matrix
+// Step Earth orbit 5 degrees
+fEarthRot += 5.0f;
+if(fEarthRot > 360.0f)
+fEarthRot = 0.0f;
+// Show the image
+glutSwapBuffers();
+}
+Using Projections 153
+4
+FIGURE 4.25 The sun/earth/moon system with the earth on the near side.
+154 CHAPTER 4 Geometric Transformations: The Pipeline
+FIGURE 4.26 The sun/earth/moon system with the earth on the far side.
+Advanced Matrix Manipulation
+These higher-level “canned” transformations (for rotation, scaling, and translation) are
+great for many simple transformation problems. Real power and flexibility, however, are
+afforded to those who take the time to understand using matrices directly. Doing so is not
+as hard as it sounds, but first you need to understand the magic behind those 16 numbers
+that make up a 4×4 transformation matrix.
+OpenGL represents a 4×4 matrix not as a two-dimensional array of floating-point values,
+but as a single array of 16 floating-point values. This approach is different from many
+math libraries, which do take the two-dimensional array approach. For example, OpenGL
+prefers the first of these two examples:
+GLfloat matrix[16]; // Nice OpenGL friendly matrix
+GLfloat matrix[4][4]; // Popular, but not as efficient for OpenGL
+OpenGL can use the second variation, but the first is a more efficient representation. The
+reason for this will become clear in a moment. These 16 elements represent the 4×4
+matrix, as shown in Figure 4.27. When the array elements traverse down the matrix
+columns one by one, we call this column-major matrix ordering. In memory, the 4×4
+approach of the two-dimensional array (the second option in the preceding code) is laid
+out in a row-major order. In math terms, the two orientations are the transpose of one
+another.
+Advanced Matrix Manipulation 155
+4
+a0
+a1
+a2
+a3
+a4
+a5
+a6
+a7
+a8
+a9
+a10
+a11
+a12
+a13
+a14
+a15
+FIGURE 4.27 Column-major matrix ordering.
+The real magic lies in the fact that these 16 values represent a particular position in space
+and an orientation of the three axes with respect to the eye coordinate system (remember
+that fixed, unchanging coordinate system we talked about earlier). Interpreting these
+numbers is not hard at all. The four columns each represent a four-element vector. To keep
+things simple for this book, we focus our attention on just the first three elements of these
+vectors. The fourth column vector contains the x, y, and z values of the transformed coordinate system’s origin. When you call glTranslate on the identity matrix, all it does is put
+your values for x, y, and z in the 12th, 13th, and 14th position of the matrix.
+The first three elements of the first three columns are just directional vectors that represent the orientation (vectors here are used to represent a direction) of the x-, y-, and z-axes
+in space. For most purposes, these three vectors are always at 90° angles from each other,
+and are usually each of unit length (unless you are also applying a scale or shear). The
+mathematical term for this (in case you want to impress your friends) is orthonormal when
+the vectors are unit length, and orthogonal when they are not. Figure 4.28 shows the 4×4
+transformation matrix with the column vectors highlighted. Notice that the last row of
+the matrix is all 0s with the exception of the very last element, which is 1.
+Xx
+Xy
+Xz
+0
+Yx
+Yy
+Yz
+0
+Zx
+Zy
+Zz
+0
+Tx
+Ty
+Tz
+1
+X axis direction
+Y axis direction
+Z axis direction
+Translation/location
+FIGURE 4.28 How a 4×4 matrix represents a position and orientation in 3D space.
+The most amazing thing is that if you have a 4×4 matrix that contains the position and
+orientation of a different coordinate system, and you multiply a vertex (as a column
+matrix or vector) by this matrix, the result is a new vertex that has been transformed to
+the new coordinate system. This means that any position in space and any desired orientation can be uniquely defined by a 4×4 matrix, and if you multiply all of an object’s
+vertices by this matrix, you transform the entire object to the given location and orientation in space!
+HARDWARE TRANSFORMATIONS
+Most OpenGL implementations have what is called hardware transform and lighting. This means
+that the transformation matrix multiplies many thousands of vertices on special graphics hardware that performs this operation very, very fast. (Intel and AMD can eat their hearts out!)
+However, functions such as glRotate and glScale, which create transformation matrices for you,
+are usually not hardware accelerated because typically they represent an exceedingly small fraction of the enormous amount of matrix math that must be done to draw a scene.
+Loading a Matrix
+After you have a handle on the way the 4×4 matrix represents a given location and orientation, you may to want to compose and load your own transformation matrices. You can
+load an arbitrary column-major matrix into the projection, modelview, or texture matrix
+stacks by using the following function:
+glLoadMatrixf(GLfloat m);
+or
+glLoadMatrixd(GLfloat m);
+Most OpenGL implementations store and manipulate pipeline data as floats and not
+doubles; consequently, using the second variation may incur some performance penalty
+because 16 double-precision numbers must be converted into single-precision floats.
+The following code shows an array being loaded with the identity matrix and then being
+loaded into the modelview matrix stack. This example is equivalent to calling
+glLoadIdentity using the higher-level functions:
+// Load an identity matrix
+GLfloat m[] = { 1.0f, 0.0f, 0.0f, 0.0f, // X Column
+0.0f, 1.0f, 0.0f, 0.0f, // Y Column
+0.0f, 0.0f, 1.0f, 0.0f, // Z Column
+0.0f, 0.0f, 0.0f, 1.0f }; // Translation
+glMatrixMode(GL_MODELVIEW);
+glLoadMatrixf(m);
+156 CHAPTER 4 Geometric Transformations: The Pipeline
+Although OpenGL implementations use column-major ordering, OpenGL (versions 1.2
+and later) does provide functions to load a matrix in row-major ordering. The following
+two functions perform the transpose operation on the matrix when loading it on the
+matrix stack:
+void glLoadTransposeMatrixf(Glfloat* m);
+and
+void glLoadTransposeMatrixd(Gldouble* m);
+Performing Your Own Transformations
+Let’s look at an example now that shows how to create and load your own transformation
+matrix—the hard way! In the sample program TRANSFORM, we draw a torus (a doughnutshaped object) in front of our viewing location and make it rotate in place. The function
+DrawTorus does the necessary math to generate the torus’s geometry and takes as an argument a 4×4 transformation matrix to be applied to the vertices. We create the matrix and
+apply the transformation manually to each vertex to transform the torus. Let’s start with
+the main rendering function in Listing 4.4.
+LISTING 4.4 Code to Set Up the Transformation Matrix While Drawing
+void RenderScene(void)
+{
+M3DMatrix44f transformationMatrix; // Storage for rotation matrix
+static GLfloat yRot = 0.0f; // Rotation angle for animation
+yRot += 0.5f;
+// Clear the window with current clearing color
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+// Build a rotation matrix
+m3dRotationMatrix44(transformationMatrix, m3dDegToRad(yRot),
+0.0f, 1.0f, 0.0f);
+transformationMatrix[12] = 0.0f;
+transformationMatrix[13] = 0.0f;
+transformationMatrix[14] = -2.5f;
+DrawTorus(transformationMatrix);
+// Do the buffer Swap
+glutSwapBuffers();
+}
+Advanced Matrix Manipulation 157
+4
+We begin by declaring storage for the matrix here:
+M3DMatrix44f transformationMatrix; // Storage for rotation matrix
+The data type M3DMatrix44f is of our own design and is simply a typedef declared in
+math3d.h for a floating-point array 16 elements long:
+typedef GLfloat M3DMatrix44f[16]; // A column major 4x4 matrix of type GLfloat
+The animation in this sample works by continually incrementing the variable yRot that
+represents the rotation around the y-axis. After clearing the color and depth buffer, we
+compose our transformation matrix as follows:
+m3dRotationMatrix44(transformationMatrix, m3dDegToRad(yRot), 0.0f, 1.0f, 0.0f);
+transformationMatrix[12] = 0.0f;
+transformationMatrix[13] = 0.0f;
+transformationMatrix[14] = -2.5f;
+Here, the first line contains a call to another math3d function, m3dRotationMatrix44. This
+function takes a rotation angle in radians (for more efficient calculations) and three arguments specifying a vector around which you want the rotation to occur. The macro function m3dDegToRad does an in-place conversion from degrees to radians. With the exception
+of the angle being in radians instead of degrees, this is almost exactly like the OpenGL
+function glRotate. The first argument is a matrix into which you want to store the resulting rotation matrix.
+As you saw in Figure 4.28, the last column of the matrix represents the translation of the
+transformation. Rather than do a full matrix multiplication, we can simply inject the
+desired translation directly into the matrix. Now the resulting matrix represents both a
+translation in space (a location to place the torus) and then a rotation of the object’s coordinate system applied at that location.
+Next, we pass this transformation matrix to the DrawTorus function. We do not need to
+list the entire function to create a torus here, but focus your attention to these lines:
+objectVertex[0] = x0*r;
+objectVertex[1] = y0*r;
+objectVertex[2] = z;
+m3dTransformVector3(transformedVertex, objectVertex, mTransform);
+glVertex3fv(transformedVertex);
+The three components of the vertex are loaded into an array and passed to the function
+m3dTransformVector3. This math3d function performs the multiplication of the vertex
+against the matrix and returns the transformed vertex in the array transformedVertex. We
+then use the vector version of glVertex and send the vertex data down to OpenGL. The
+result is a spinning torus, as shown in Figure 4.29.
+158 CHAPTER 4 Geometric Transformations: The Pipeline
+FIGURE 4.29 The spinning torus, doing our own transformations.
+It is important that you see at least once the real mechanics of how vertices are transformed by a matrix using such a drawn-out example. As you progress as an OpenGL
+programmer, you will find that the need to transform points manually will arise for tasks
+that are not specifically related to rendering operations, such as collision detection
+(bumping into objects), frustum culling (throwing away and not drawing things you can’t
+see), and some other special effects algorithms.
+For geometry processing, however, the TRANSFORM sample program is very inefficient,
+despite its instructional value. We are letting the CPU do all the matrix math instead of
+letting OpenGL’s dedicated hardware do the work for us (which is much faster than the
+CPU!). In addition, because OpenGL has the modelview matrix, all our transformed points
+are being multiplied yet again by the identity matrix. This does not change the value of
+our transformed vertices, but it is still a wasted operation.
+For the sake of completeness, we provide an improved example, TRANSFORMGL, that
+instead uses our transformation matrix but hands it over to OpenGL using the function
+glLoadMatrixf. We eliminate our DrawTorus function with its dedicated transformation
+code and use a more general-purpose torus drawing function, gltDrawTorus, from the
+glTools library. The relevant code is shown in Listing 4.5.
+Advanced Matrix Manipulation 159
+4
+LISTING 4.5 Loading the Transformation Matrix Directly into OpenGL
+// Build a rotation matrix
+m3dRotationMatrix44(transformationMatrix, m3dDegToRad(yRot),
+0.0f, 1.0f, 0.0f);
+transformationMatrix[12] = 0.0f;
+transformationMatrix[13] = 0.0f;
+transformationMatrix[14] = -2.5f;
+glLoadMatrixf(transformationMatrix);
+gltDrawTorus(0.35, 0.15, 40, 20);
+Adding Transformations Together
+In the preceding example, we simply constructed a single transformation matrix and
+loaded it into the modelview matrix. This technique had the effect of transforming any
+and all geometry that followed by that matrix before being rendered. As you’ve seen in
+the previous examples, we often add one transformation to another. For example, we used
+glTranslate followed by glRotate to first translate and then rotate an object before being
+drawn. Behind the scenes, when you call multiple transformation functions, OpenGL
+performs a matrix multiplication between the existing transformation matrix and the one
+you are adding or appending to it. For example, in the TRANSFORMGL example, we
+might replace the code in Listing 4.5 with something like the following:
+glPushMatrix();
+glTranslatef(0.0f, 0.0f, -2.5f);
+glRotatef(yRot, 0.0f, 1.0f, 0.0f);
+gltDrawTorus(0.35, 0.15, 40, 20);
+glPopMatrix();
+Using this approach has the effect of saving the current identity matrix, multiplying the
+translation matrix, multiplying the rotation matrix, and then transforming the torus by
+the result. You can do these multiplications yourself by using the math3d function
+m3dMatrixMultiply, as shown here:
+M3DMatrix44f rotationMatrix, translationMatrix, transformationMatrix;
+...
+m3dRotationMatrix44(rotationMatrix, m3dDegToRad(yRot), 0.0f, 1.0f, 0.0f);
+m3dTranslationMatrix44(translationMatrix, 0.0f, 0.0f, -2.5f);
+m3dMatrixMultiply44(transformationMatrix, translationMatrix, rotationMatrix);
+glLoadMatrixf(transformationMatrix);
+gltDrawTorus(0.35f, 0.15f, 40, 20);
+160 CHAPTER 4 Geometric Transformations: The Pipeline
+OpenGL also has its own matrix multiplication function, glMultMatrix, that takes a
+matrix and multiplies it by the currently loaded matrix and stores the result at the top of
+the matrix stack. In our final code fragment, we once again show code equivalent to the
+preceding, but this time we let OpenGL do the actual multiplication:
+M3DMatrix44f rotationMatrix, translationMatrix, transformationMatrix;
+...
+glPushMatrix();
+m3dRotationMatrix44(rotationMatrix, m3dDegToRad(yRot), 0.0f, 1.0f, 0.0f);
+gltTranslationMatrix44(translationMatrix, 0.0f, 0.0f, -2.5f);
+glMultMatrixf(translationMatrix);
+glMultMatirxf(rotationMatrix);
+gltDrawTorus(0.35f, 0.15f, 40, 20);
+glPopMatrix();
+As you can see, there is considerable flexibility in how you handle model transformations.
+Using the OpenGL functions allows you to offload as much as possible to the graphics
+hardware. Using your own functions gives you ultimate control over any intermediate
+steps. The freedom to mix and match approaches as needed is another reason OpenGL is
+an extremely powerful and flexible API for doing 3D graphics.
+</code></pre>
+
+
+
+
+<h1>LESSON 27 - Procedural Generation pt. 2</h1>
+<h3>Introduction</h3>
+<p id="note">OpenGL is by default aliased. </p>
+
+<p>Let's make a few new functions and implement our first procedurally generated textures.</p>
+
+<p>Add the following function prototypes, defines and variables in the global section of the <b>main.c</b> file:</p>
+
+<pre><code>
+void makeCheckImage(void);
+void loadTexture(void);
+...
+// Write the defines in CAPS
+#define checkImageWidth 64	
+#define checkImageHeight 64
+GLubyte checkImage[checkImageHeight][checkImageWidth][4];
+GLuint texName;
+</code></pre>
+
+<p>Then implement the bodies of the new functions.</p>
+
+<pre><code>
+void makeCheckImage(void)
+{
+	int i, j, c;
+
+	for (i = 0; i < checkImageHeight; i++)
+	{
+		for (j = 0; j < checkImageWidth; j++)
+		{
+			c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;	// Take byte of i and multiply it by hex value of 8 in decimal (produces a checkerboard pattern * alpha) 
+										// ^ represents Bitwise OR
+			checkImage[i][j][0] = (GLubyte) c;			// R
+			checkImage[i][j][1] = (GLubyte) c;			// G
+			checkImage[i][j][2] = (GLubyte) c;			// B
+			checkImage[i][j][3] = 255;				// A (Changing the value will not affect the output of this code)
+		}
+	}
+}
+</code></pre>
+
+<p>Next we add the function body for our new texture generating function:</p>
+
+<pre><code>
+void loadTexture(void)
+{
+	makeCheckImage();
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glGenTextures(1, &texName);
+	glBindTexture(GL_TEXTURE_2D, texName);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, checkImageWidth, checkImageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+}
+</code></pre>
+
+<p>Add this to <b>initialize()</b>.</p>
+
+<pre><code>
+glEnable(GL_TEXTURE_2D);
+loadTexture();
+</code></pre>
+
+<p>Then you add this into <b>display()</b></p>
+
+<pre><code>
+glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-2.0, -1.0, 0.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(-2.0, 1.0f, 0.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(0.0f, -1.0f, 0.0f);
+
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(1.0f, -1.0f, 0.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(2.41421f, 1.0f, -1.41421f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(2.41421f, -1.0f, -1.41421f);
+glEnd();
+</code></pre>
+
+<p>If you compile and run this project you'll see a procedurally generated texture of a checkerboard pattern facing the screen on the left and skewed to the right on the right side.</p>
+
+<p>MSDN documentation about bitwise operators: <a href="https://docs.microsoft.com/en-us/cpp/c-language/c-bitwise-operators?view=msvc-170" target="_blank">https://docs.microsoft.com/en-us/cpp/c-language/c-bitwise-operators?view=msvc-170</a></p>
+
+
+<h1>LESSON 28 - Drawing advanced geometry pt. 3</h1>
+<h3>Introduction</h3>
+<p>Let start free drawing some real world objects, like a house, and add some texturing to it.</p>
+
+<p>Begin by adding a new file called <b>Resource.rc</b> and a <b>texture.h</b>, like in lesson 22. Remember to to enable depth testing, adding <b>GL_DEPTH_BUFFER_BIT</b> in <b>display</b> and include texture.h in main, and add the <b>load_texture</b>-function.</p>
+
+<p>Then lets declare some global variables to use for our textures. For simplicity sake I making adding a function prototype and GLuint texture variables just below our pervious code: </p>
+
+<pre><code>
+void draw_house(void);
+
+GLuint house_front_texture, house_left_texture, house_right_texture, house_back_texture;
+GLuint roof_left_texture, roof_right_texture;
+GLuint door_texture;
+GLuint chimney_texture;
+</code></pre>
+
+<p>Add the following code into <b>initialize</b>:</p>
+
+<pre><code>
+glEnable(GL_DEPTH_TEST);
+glDepthFunc(GL_LEQUAL);
+glClearDepth(1.0f);
+
+load_texture(&house_front_texture, MAKEINTRESOURCE(IDI_TEXTURE_FRONT));
+load_texture(&house_left_texture, MAKEINTRESOURCE(IDI_TEXTURE_LEFT));
+load_texture(&house_right_texture, MAKEINTRESOURCE(IDI_TEXTURE_RIGHT));
+load_texture(&house_back_texture, MAKEINTRESOURCE(IDI_TEXTURE_BACK));
+load_texture(&door_texture, MAKEINTRESOURCE(IDI_TEXTURE_DOOR));
+load_texture(&roof_left_texture, MAKEINTRESOURCE(IDI_TEXTURE_ROOF_LEFT));
+load_texture(&roof_right_texture, MAKEINTRESOURCE(IDI_TEXTURE_ROOF_RIGHT));
+load_texture(&chimney_texture, MAKEINTRESOURCE(IDI_TEXTURE_CHIMNEY));
+</code></pre>
+
+<p>The lets implement the function prototype of <b>draw_house</b></p>
+
+<pre><code>
+
+void draw_house(void)
+{
+	glBindTexture(GL_TEXTURE_2D, house_front_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, house_right_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, house_left_texture);
+	glBegin(GL_QUADS);
+		glColor3f(1.0f, 1.0f, 0.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+	glEnd();
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	glBindTexture(GL_TEXTURE_2D, house_back_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 0.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 0.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, roof_left_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.5f, 1.5f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.5f, 1.5f, -1.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, roof_right_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.5f, 1.5f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.5f, 1.5f, 0.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, house_front_texture);
+	glBegin(GL_TRIANGLES);
+		glTexCoord2f(0.2f, 0.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glTexCoord2f(0.8f, 0.0f);
+		glVertex3f(1.0f, 1.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.5f);
+		glVertex3f(0.5f, 1.5f, 0.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, house_front_texture);
+	glBegin(GL_TRIANGLES);
+		glTexCoord2f(0.8f, 0.0f);
+		glVertex3f(1.0f, 1.0f, -1.0f);
+		glTexCoord2f(0.2f, 0.0f);
+		glVertex3f(0.0f, 1.0f, -1.0f);
+		glTexCoord2f(0.5f, 1.0f);
+		glVertex3f(0.5f, 1.5f, -1.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, door_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.4f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.6f, 0.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.6f, 0.6f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.4f, 0.6f, 0.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, chimney_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.3f, 1.2f, -0.4f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.5f, 1.2f, -0.4f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.5f, 1.8, -0.4f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.3, 1.8, -0.4f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, chimney_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.5f, 1.2f, -0.4f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.5, 1.8f, -0.4f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.5f, 1.8f, -0.6f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.5f, 1.2f, -0.6f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, chimney_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.5f, 1.2, -0.6f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.5f, 1.8f, -0.6f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.3f, 1.8f, -0.6f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.3f, 1.2f, -0.6f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, chimney_texture);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(0.3f, 1.2f, -0.6f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.3f, 1.2f, -0.4f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.3f, 1.8f, -0.4f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(0.3f, 1.8f, -0.6f);
+	glEnd();
+}
+</code></pre>
+
+<p>Then just add the <b>draw_house</b> and a static float rotate variable into <b>display</b>.</p>
+
+<pre><code>
+static float rotate = 0.0f;
+rotate += 0.25f;
+glRotatef(rotate, 0.0f, 1.0f, 0.0f);
+
+draw_house();
+</code></pre>
+
+<p id="note">
+	In a future iteration of this tutorial add a function to place point (p.x, p.y, p.z) in each vertices, like struct, and think of better naming conversion for the texture variables.
+	
+	<pre><code>
+	typedef struct point {
+		float x, y, z;
+	} p;
+	
+	void add_points(x, y, z) {
+		p.x = x;
+		p.y = y;
+		p.z = z;
+	}
+	</code></pre>
+</p>
+
+
+<h1>LESSON 29 - Procedural Generation pt. 3 (Mandelbrot)</h1>
 <h3>Introduction</h3>
 <p></p>
 
+<p></p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+// LESSON 29 
+void mandelbrot(void);
+struct type_rgb { float r; float g; float b; };
+// Holds the size of the mandelbrot shape (pixels contains the colorval for the pixel, pattern is a predefined set of colors)
+struct type_rgb pixels[841 * 1440], pattern[999];
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	int i;
+	float r, g, b;
+	// All pixels are initialized to white (841 * 1440 white pixels)
+	for (i = 0; i < 841 * 1440; i++)
+	{
+		pixels[i].r = 1;
+		pixels[i].g = 1;
+		pixels[i].b = 1;
+	}
+
+	i = 0;
+	for (r = 0.1f; r <= 0.9f; r = r + 0.1f)
+	{
+		for (g = 0.1f; g <= 0.9f; g = g + 0.1f)
+		{
+			for (b = 0.1f; b <= 0.9f; b = b + 0.1f)
+			{
+				// This is a simple way to manipulate the colors
+				pattern[i].r = b;
+				pattern[i].g = r;
+				pattern[i].b = g;
+				// Fills 729 different color patterns
+				/*pattern[i].r = r;
+				pattern[i].g = g;
+				pattern[i].b = b;*/
+				i++;
+			}
+		}
+	}
+
+	// Reinitializing the remaining patterns to white
+	/*for (; i <= 999; i++)
+	{
+		pattern[i].r = 1;
+		pattern[i].g = 1; 
+		pattern[i].b = 1;
+	}*/
+
+	mandelbrot();
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	glDrawPixels(1440, 841, GL_RGB | GL_STENCIL_INDEX, GL_FLOAT, pixels);
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+
+
+void mandelbrot(void)
+{
+	// Mandelbrot is a complex equation (contains one real number and one imaginary number)
+	// x0 = real part of C value (range: -2.5, 1.1)
+	// y0 = imaginary part (range: -1, 1.1)
+	float x0, y0, x, y, xtemp;
+	// iteration: controlled number of iterations
+	// max_iteration: the maximum number of iterations
+	// loc = location of the current [x, y]
+	int iteration, max_iteration, loc = 0;
+	
+	// Zn = complex number
+	// Mandelbrot Equation = Zn^2 + C
+	// complex number = real part + imaginary part
+	// real part = x0		
+	// imaginary part = y0	[-1, 1]
+	// Complex Number = x0 + y0
+
+	// https://simple.wikipedia.org/wiki/Mandelbrot_set#:~:text=The%20Mandelbrot%20set%20can%20be,positive%20integer%20(natural%20number).
+
+	// Zn = (x0^2 + y0^2)
+
+	for (y0 = -1; y0 < 1.1f; y0 = y0 + 0.0025f)
+	{
+		for (x0 = -2.5f; x0 < 1.1f; x0 = x0 + 0.0025f)
+		{
+			x = 0;
+			y = 0;
+			iteration = 0;
+			max_iteration = 1000;
+
+			for (iteration = 0; ((x * x) + (y * y) + 1.5 < (2 * 2)) && (iteration < max_iteration); iteration = iteration + 1)
+			{
+				xtemp = (x * x) - (y * y) + x0;
+				y = (2 * x * y) + y0;
+				x = xtemp;
+				pixels[loc].r = pattern[iteration].r;
+				pixels[loc].g = pattern[iteration].g;
+				pixels[loc].b = pattern[iteration].b;
+			}
+
+			if (iteration >= 999)
+			{
+				pixels[loc].r = 0;
+				pixels[loc].g = 0;
+				pixels[loc].b = 0;
+			}
+
+			loc = loc + 1;
+		}
+	}
+}
+</code></pre>
+
+<p id="note">This code doesn't resize with the window, so implement that...</p>
+
+
+
+<h1>LESSON 30 - Matrices and Identity Matrix</h1>
+<h3>Introduction</h3>
+<p>Identity matrix (known as a unit matrix)...</p>
+
+<p>1x + 2y + 3z = 100</p>
+<p>4x + 5y + 6z = 200</p>
+<p>7x + 8y + 3z = 300</p>
+
+<p>A matrix is a vehical for transformations.</p>
+
+<pre><code>
+  x  y  z
+ --     --  
+| 1  0  0 | 
+| 0  1  0 | 
+| 0  0  1 | 
+ --      -- 
+</code></pre>
+
+<pre><code>
+  x  y  z
+ --     --     - -     --  --
+| 1  2  3 |   | x |   |  100 |
+| 4  5  6 | X | y | = |  200 |
+| 7  8  3 |   | z |   |  300 |
+ --      --    - -     --  --
+</code></pre>
+
+<pre><code>
+  x  y  z
+ --        --  
+| 1  0  0  0 |     | x |   | x' |
+| 0  1  0  0 |     | y |   | y' |
+| 0  0  1  0 |  X  | z | = | z' |
+| 0  0  0  1 |     |   |   |    |
+ --        -- 
+</code></pre>
+
+
+<p>If you have a transformation matrix like this: glTranslatef(3.0f, 5.0f, -8.0f): </p>
+
+<pre><code>
+  x  y  z
+ --     --           - -     -  -
+| 1  0  0  tx |     | x |   | x' |
+| 0  1  0  ty |     | y |   | y' |
+| 0  0  1  tz |  X  | z | = | z' |
+| 0  0  0  1  |     | 1 |   | 1  |
+ --         --       - -     -  -
+</code></pre>
+
+<h3>Rotation Matrix</h3>
+
+<pre><code>
+ --                                                --
+| 1.0f             0.0f          0.0f          0.0f  |
+| 0.0f          cos &theta;   sin &theta;      0.0f  |
+| -sin &theta;  cos &theta;       0.0f         0.0f  |
+| 0.0f              0.0f         0.0f          1.0f  |
+ --                                                --
+</code></pre>
+
+<p>You can add the matrices in your <b>display</b> function:</p>
+
+<pre><code>
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	// LESSON 30
+	GLfloat identityMatrix[16];
+	identityMatrix[0]	= 1.0f;
+	identityMatrix[1]	= 0.0f;
+	identityMatrix[2]	= 0.0f;
+	identityMatrix[3]	= 0.0f;
+	identityMatrix[4]	= 0.0f;
+	identityMatrix[5]	= 1.0f;
+	identityMatrix[6]	= 0.0f;
+	identityMatrix[7]	= 0.0f;
+	identityMatrix[8]	= 0.0f;
+	identityMatrix[9]	= 0.0f;
+	identityMatrix[10]	= 1.0f;
+	identityMatrix[11]	= 0.0f;
+	identityMatrix[12]	= 0.0f;
+	identityMatrix[13]	= 0.0f;
+	identityMatrix[14]	= 0.0f;
+	identityMatrix[15]	= 1.0f;
+
+	GLfloat translationMatrix[16];
+	translationMatrix[0] = 1.0f;
+	translationMatrix[1] = 0.0f;
+	translationMatrix[2] = 0.0f;
+	translationMatrix[3] = 0.0f;
+	translationMatrix[4] = 0.0f;
+	translationMatrix[5] = 1.0f;
+	translationMatrix[6] = 0.0f;
+	translationMatrix[7] = 0.0f;
+	translationMatrix[8] = 0.0f;
+	translationMatrix[9] = 0.0f;
+	translationMatrix[10] = 1.0f;
+	translationMatrix[11] = 0.0f;
+	translationMatrix[12] = 0.0f;
+	translationMatrix[13] = 0.0f;
+	translationMatrix[14] = -3.0f;
+	translationMatrix[15] = 1.0f;
+
+	glLoadMatrixf(identityMatrix);
+	glMultMatrixf(translationMatrix);
+
+	static GLfloat angle = 0.0f;
+	GLfloat rotationMatrix[16];
+	rotationMatrix[0] = 1.0f;
+	rotationMatrix[1] = 0.0f;
+	rotationMatrix[2] = 0.0f;
+	rotationMatrix[3] = 0.0f;
+	rotationMatrix[4] = 0.0f;
+	rotationMatrix[5] = cos(angle);
+	rotationMatrix[6] = sin(angle);
+	rotationMatrix[7] = 0.0f;
+	rotationMatrix[8] = 0.0f;
+	rotationMatrix[9] = -(sin(angle));
+	rotationMatrix[10] = cos(angle);
+	rotationMatrix[11] = 0.0f;
+	rotationMatrix[12] = 0.0f;
+	rotationMatrix[13] = 0.0f;
+	rotationMatrix[14] = 0.0f;
+	rotationMatrix[15] = 1.0f;
+
+	glMultMatrixf(rotationMatrix);
+	angle += 0.01f;
+
+	glBegin(GL_TRIANGLES);
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glVertex2f(0.0f, 1.0f);
+		glColor3f(0.0f, 1.0f, 0.0f);
+		glVertex2f(-1.0f, -1.0f);
+		glColor3f(0.0f, 0.0f, 1.0f);
+		glVertex2f(1.0f, -1.0f);
+	glEnd();
+
+	SwapBuffers(g_hdc);
+}
+</code></pre>
+
+<p>Case study:</p>
+
+<pre><code>
+					   | cos &theta;    -sin &theta;    0            0 |  
+R<sub>z</sub>(theta) = | sin &theta;    cos &theta;     0            0 |  
+					   |     0               0          1            0 |  
+					   |     0               0          0            1 |  
+</code></pre>
+
+<pre><code>
+					   | cos &theta;         0     -sin &theta;       0 |  
+R<sub>y</sub>(theta) = |     0               1          0             0 |  
+					   | sin &theta;         0     cos &theta;        0 |  
+					   |     0               0          0             1 |  
+</code></pre>
+
+<pre><code>
+					   |     1               0          0            0 |  
+R<sub>x</sub>(theta) = |     0    cos &theta;     -sin &theta;       0 |  
+					   |     0    sin &theta;     cos &theta;        0 |  
+					   |     0               0          0            1 |  
+</code></pre>
+
+<a href="https://cupdf.com/document/perspective-projections-opengl-viewing-3d-projections-opengl-viewing-3d-clipping.html">https://cupdf.com/document/perspective-projections-opengl-viewing-3d-projections-opengl-viewing-3d-clipping.html</a>
+
+
+
+<h1>LESSON 31 - Simulating planets with rotation using GLU pt. 1</h1>
+<h3>Introduction</h3>
+
+<p>This time we are going to simulate a planet orbiting a sun using the GLU way of drawing spheres. Start by adding these global variables to your <b>main.c</b> file: </p>
+
+<pre><code>
+GLfloat year = 0;
+GLfloat day = 0;
+GLUquadric* quadric = NULL;
+</code></pre>
+
+<p>We'll handle the movement manually for now, so add the follwing code into your <b>WndProc</b> in <b>WM_KEYDOWN</b>:</p>
+
+<pre><code>
+case 'y':
+	year = (int)(year + 3) % 360;
+	break;
+case 'Y':
+	year = (int)(year - 3) % 360;
+	break;
+case 'd':
+	day = (int)(day + 6) % 360;
+	break;
+case 'D':
+	day = (int)(day - 6) % 360;
+	break;
+</code></pre>
+
+<p>This will rotate the planet around the orbit of the sun when user presses <b>y</b> or <b>Y</b>, and rotate the planet itself when the user presses <b>d</b> or <b>D</b>.</p>
+
+<p>To enable depth testing so the rotation will look like it's hidden behind the sun you need to enable depth testing (in <b>initialize</b>): </p>
+
+<pre><code>
+glEnable(GL_DEPTH_TEST);
+glDepthFunc(GL_LEQUAL);
+</code></pre>
+
+<p>To ensure that you can see the sun and planet, add the <b>gluPerspective</b> into your <b>resize</b> function: </p>
+
+<pre><code>
+gluPerspective(45.0f, (GLfloat)w/(GLfloat)h, 0.1f, 100.0f);
+</code></pre>
+
+<p>Finally we position the camera and add each object into the scene:</p>
+
+<pre><code>
+gluLookAt(
+	0.0f, 0.0f, 5.0f,
+	0.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f
+);
+
+glPushMatrix();										// OGL handles two different stacks, proj_stack & transf_stack
+	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);				// This is pushed on the transformation stack
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);		// Handle polygon filling, GL_FILL is oposite of wireframe
+	quadric = gluNewQuadric();						// Create the quadric object
+	glColor3f(1.0f, 1.0f, 0.0f);					// 
+	gluSphere(quadric, 0.75f, 30.0f, 30.0f);		// Pass the object to the quadric sphere, radius = 75, 30, longtitude, 30 latitude (resolution of the sphere)
+glPopMatrix();										// Returns the stack to the original projection matrix
+
+glPushMatrix();										// Second pushed transformation stack
+	glRotatef((GLfloat)year, 0.0f, 1.0f, 0.0f);		// 
+	glTranslatef(1.5f, 0.0f, 0.0f);					// 
+	glRotatef((GLfloat)90.0f, 1.0f, 0.0f, 0.0f);	// Without this call the sphere is rendered in the y direction..
+	glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f);		// 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);		// 
+	quadric = gluNewQuadric();						// 
+	glColor3f(0.4f, 0.9f, 1.0f);					// 
+	gluSphere(quadric, 0.2f, 20.0f, 20.0f);			// 
+glPopMatrix();
+</code></pre>
+
+
+
+
+<h1>LESSON 32 - Simulating planets with rotation using GLU pt. 2</h1>
+<h3>Introduction</h3>
+
+<p>Now lets add a moon orbiting the planet to continue our space simulation or orbiting bodies in space.</p>
+
+<p>First we need to declare a variable that controlls the moon, so add the following into the global namespace:</p>
+
+<pre><code>
+GLfloat moon_revolution = 0.0f;
+</code></pre>
+
+<p>The moon should orbit the planet we generated in the previous lesson in the same way the planet orbits the sun, therefor you have to add another <b>glPushMatrix</b> / <b>glPopMatrix</b> inside the stack that controls the planet orbitation: </p>
+
+<pre><code>
+glPushMatrix();
+	glRotatef((GLfloat)year, 0.0f, 1.0f, 0.0f);	
+	glTranslatef(1.5f, 0.0f, 0.0f);	 
+	glRotatef((GLfloat)90.0f, 1.0f, 0.0f, 0.0f); 
+	glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f);	 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	 
+	quadric = gluNewQuadric();
+	glColor3f(0.4f, 0.9f, 1.0f);
+	gluSphere(quadric, 0.2f, 20.0f, 20.0f);	
+	
+	...							// Add the new substack here
+	
+glPopMatrix();
+</code></pre>
+
+<p>The new substack should look exactly like the previous ones except for the size of the moon. I've also chosen to draw the with filled <b>glPolygonMode</b> to improve the visibility.</p>
+<pre><code>
+glPushMatrix();
+	// Earth is rotating, so moon should rotate as well
+	glRotatef((GLfloat)day, 0.0f,0.0f, 1.0f);
+	glTranslatef(0.5f, 0.0f, 0.0f);
+	// Controls the moons own axis
+	glRotatef((GLfloat)moon_revolution, 0.0f, 0.0f, 1.0f);
+	// Rotates to it's correct positional axis
+	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+	// Creating the moons sphere
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	quadric = gluNewQuadric();
+	glColor3f(0.8f, 0.8f, 0.8f);
+	gluSphere(quadric, 0.1f, 15.0f, 15.0f);
+glPopMatrix();
+</code></pre>
+
+<p>Lastly we update the <b>WndProc</b> to add orbitational movement when the user presses the <b>d</b> or <b>D</b> button on the keyboard.</p>
+
+<p id="note">Note that we have changed the case in our switch-statement to <b>case WM_CHAR:</b> to handle the keyboard input correctly</p>
+
+<pre><code>
+...
+case WM_CHAR:
+	...
+	case 'd':
+		day = (int)(day + 6) % 360;
+		moon_revolution = (int)(moon_revolution + 9) % 360;
+		break;
+	case 'D':
+		day = (int)(day - 6) % 360;
+		moon_revolution = (int)(moon_revolution + 9) % 360;
+		break;
+	...
+</code></pre>
+
+<p>If you compile and run your program now, then press lower- or uppercase <b>d</b> or lower- or uppercase <b>y</b> you'll see the planet orbiting around the sun, with the moon orbiting around the planet.</p>
+
+<p id="note">Complete code from this lesson</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows")
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+GLfloat year = 0;
+GLfloat day = 0;
+GLUquadric* quadric = NULL;
+GLfloat moon_revolution = 0.0f;
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	// case WM_KEYDOWN:
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		case 'y':
+			year = (int)(year + 3) % 360;
+			break;
+		case 'Y':
+			year = (int)(year - 3) % 360;
+			break;
+		case 'd':
+			day = (int)(day + 6) % 360;
+			moon_revolution = (int)(moon_revolution + 9) % 360;
+			break;
+		case 'D':
+			day = (int)(day - 6) % 360;
+			moon_revolution = (int)(moon_revolution + 9) % 360;
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(45.0f, (GLfloat)w/(GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	// LESSON 31
+	gluLookAt(
+		0.0f, 0.0f, 5.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f
+	);
+
+	glPushMatrix();	
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);	
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		quadric = gluNewQuadric();
+		glColor3f(1.0f, 1.0f, 0.0f);
+		gluSphere(quadric, 0.75f, 30.0f, 30.0f);
+	glPopMatrix();
+
+	glPushMatrix();	
+		glRotatef((GLfloat)year, 0.0f, 1.0f, 0.0f);	 
+		glTranslatef(1.5f, 0.0f, 0.0f);	 
+		glRotatef((GLfloat)90.0f, 1.0f, 0.0f, 0.0f);
+		glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f);	 
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	 
+		quadric = gluNewQuadric();	 
+		glColor3f(0.4f, 0.9f, 1.0f);
+		gluSphere(quadric, 0.2f, 20.0f, 20.0f); 
+		glPushMatrix();
+			glRotatef((GLfloat)day, 0.0f,0.0f, 1.0f);
+			glTranslatef(0.5f, 0.0f, 0.0f);
+			glRotatef((GLfloat)moon_revolution, 0.0f, 0.0f, 1.0f);
+			glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			quadric = gluNewQuadric();
+			glColor3f(0.8f, 0.8f, 0.8f);
+			gluSphere(quadric, 0.1f, 15.0f, 15.0f);
+		glPopMatrix();
+	glPopMatrix();
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</pre></code>
+
+
+
+
+<h1>LESSON 33 - Simulating a robotic arm with multiple joints</h1>
+<h3>Introduction</h3>
+
+<p>This time we'll create a moving robotic arm, with joints that seem connected.</p>
+
+<p>Begin by declaring three new variables in the global scope:</p>
+
+<pre><code>
+GLfloat shoulder = 0.0f;
+GLfloat elbow = 0.0f;
+GLUquadric* quadric = NULL;
+</code></pre>
+
+<p>Now we update our <b>display</b>-function with the following: </p>
+
+<pre><code>
+glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+glColor3f(0.5f, 0.35f, 0.005f);
+glTranslatef(0.0f, 0.0f, -12.0f);
+glPushMatrix();
+	glRotatef((GLfloat)shoulder, 0.0f, 0.0f, 1.0f);
+	glTranslatef(1.0f, 0.0f, 0.0f);
+	
+	glPushMatrix();
+		glScalef(2.0f, 0.5f, 1.0f);
+		quadric = gluNewQuadric();
+		gluSphere(quadric, 0.5f, 10.0f, 10.0f);
+	glPopMatrix();
+
+	glTranslatef(1.0f, 0.0f, 0.0f);
+	glRotatef((GLfloat)elbow, 0.0f, 0.0f, 1.0f);
+	glTranslatef(1.0f, 0.0f, 0.0f);
+	
+	glPushMatrix();
+		glScalef(2.0f, 0.5f, 1.0f);
+		quadric = gluNewQuadric();
+		gluSphere(quadric, 0.5, 10.0f, 10.0f);
+	glPopMatrix();
+
+glPopMatrix();
+</code></pre>
+
+<p>And lastely we update out <b>WndProc</b> with the following code: </p>
+
+<pre><code>
+case 'S':
+	shoulder = (int)(shoulder + 3) % 360;
+	break;
+case 's':
+	shoulder = (int)(shoulder - 3) % 360;
+	break;
+case 'E':
+	elbow = (int)(elbow + 3) % 360;
+	break;
+case 'e':
+	elbow = (int)(elbow - 3) % 360;
+	break;
+}
+</code></pre>
+
+<p>Now the user can rotate the shoulder and elbow of the robotic arm by pressing <b>'e'</b> or <b>'s'</b> on the keyboard.</p>
+
+<p id="note">Complete code from this example</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+GLfloat shoulder = 0.0f;
+GLfloat elbow = 0.0f;
+GLUquadric* quadric = NULL;
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		case 'S':
+			shoulder = (int)(shoulder + 3) % 360;
+			break;
+		case 's':
+			shoulder = (int)(shoulder - 3) % 360;
+			break;
+		case 'E':
+			elbow = (int)(elbow + 3) % 360;
+			break;
+		case 'e':
+			elbow = (int)(elbow - 3) % 360;
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	int i;
+	float r, g, b;
+	
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(45.0f, (GLfloat)w/(GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glColor3f(0.5f, 0.35f, 0.005f);
+	glTranslatef(0.0f, 0.0f, -12.0f);
+	glPushMatrix();
+		glRotatef((GLfloat)shoulder, 0.0f, 0.0f, 1.0f);
+		glTranslatef(1.0f, 0.0f, 0.0f);
+		
+		glPushMatrix();
+			glScalef(2.0f, 0.5f, 1.0f);
+			quadric = gluNewQuadric();
+			gluSphere(quadric, 0.5f, 10.0f, 10.0f);
+		glPopMatrix();
+
+		glTranslatef(1.0f, 0.0f, 0.0f);
+		glRotatef((GLfloat)elbow, 0.0f, 0.0f, 1.0f);
+		glTranslatef(1.0f, 0.0f, 0.0f);
+		
+		glPushMatrix();
+			glScalef(2.0f, 0.5f, 1.0f);
+			quadric = gluNewQuadric();
+			gluSphere(quadric, 0.5, 10.0f, 10.0f);
+		glPopMatrix();
+
+	glPopMatrix();
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+
+
+
+<h1>LESSON 34 - Procedurally drawing a circle pt. 1</h1>
+<h3>Introduction</h3>
+
+<p>Today we'll begin procedurally drawing a circle. Lets import the math-library and declare a function prototype:</p>
+
+<pre><code>
+...
+#define _USE_MATH_DEFINES 1
+#include <math.h>
+
+...
+void draw_sphere(float, int);
+</code></pre>
+
+<p>Our function implemention takes a <b>float r</b> for <i>radius</i>, and an <b>int n</b> for <i>number of sides</i> in our triangle strip.</p>
+
+<p>Then we implement the drawing function to procedurally generate a circle. We declare the local variables we need to work with: <i>i</i>, <i>j</i>, <i>phi1 <var>&Phi;</var></i>, <i>phi2 <var>&rho;</var></i>, <i>theta <var>&theta;</var></i>, <i>s</i> and <i>t</i>.</p>
+
+<p>We use the i and j as loop variables, and phi1, phi2 and theta to define our circle... s and j are used as texture coordinates (??) and is not implemented in this lesson.</p>
+
+<p>Next we declare <i>ex</i>, <i>ey</i> and <i>ez</i>, then <i>px</i>, <i>py</i> and <i>pz</i>, all as <b>GLfloat</b>. Those define the (...something size of the circle??)</p>
+
+<pre><code>
+void draw_sphere(float r, int n)
+{
+	int i, j;
+	GLdouble phi1, phi2, theta, s, t;
+	GLfloat ex, ey, ez;
+	GLfloat px, py, pz;
+
+	if (r < 0) r = -r;
+	if (n < 0) n = -n;
+	// Since triangle only has three sides...
+	if (n < 4 || r <= 0) {
+		// Calculates the origon of the circle
+		glBegin(GL_POINTS);
+			glVertex3f(0.0f, 0.0f, 0.0f);
+		glEnd();
+		return;
+	}
+	
+	for (j = 0; j < n; j++) {
+		phi1 = j * M_PI * 2 / n;
+		phi2 = (j + 1) * M_PI * 2 / n;
+		// Calculates two more points, and draws it using GL_TRINGLE_STRIP, then moves phi1
+		glBegin(GL_TRIANGLE_STRIP);
+			for (i = 0; i <= n; i++) {
+				theta = i * M_PI / n;
+				ex = sin(theta) * cos(phi2);
+				ey = sin(theta) * sin(phi2);
+				ez = cos(theta);
+				px = r * ex;
+				py = r * ey;
+				pz = r * ez;
+				glVertex3f(px, py, pz);
+
+				ex = sin(theta) * cos(phi1);
+				ey = sin(theta) * sin(phi1);
+				ez = cos(theta);
+				px = r * ex;
+				py = r * ey;
+				pz = r * ez;
+				glVertex3f(px, py, pz);
+			}
+		glEnd();
+	}
+}
+</code></pre>
+
+<p>We define our center of the circle using the <b>if (n < 4 || r <= 0)</b> and then we append another two points in or for-loop, and increment the 2D circle by <b>phi2 = (j + 1) * M_PI * 2 / n</b></p>
+
+<p>The in our <b>display</b> we add the viewport transformation and call the newly created function:</p>
+
+<pre><code>
+glTranslatef(0.0f, 0.0f, -3.0f);
+draw_sphere(0.2f, 60);
+</code></pre>
+
+<p>Compile and run the program and you'll see a white, 3 dimentional circle in the middle of the screen.</p>
+
+<p id="note">For more details about calculating a circle take a look at these links: <br/>
+<a href="Spherical Coordinates on mathinsight.org: ">https://mathinsight.org/spherical_coordinates</a><br/>
+<a href="Implementing a circle in OpenGL: ">https://mathinsight.org/spherical_coordinates</a>
+</p>
+
+
+
+<h1>LESSON 34 - Rendering light</h1>
+<h3>Introduction</h3>
+<p>So far this tutorial has been focusing on the lower leverl stuff, and drawing various shapes, but what is a complete scene without lighting and shading?</p>
+
+<p>This lesson we'll start adding lighting to our scene, so as always, lets declare some variables to use when adding light. In our global space add the following:</p>
+
+<pre><code>
+bool bLight = false;
+GLfloat light_ambient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 0.0f };
+GLfloat light_position[] = { 0.0f, 0.0f, 2.0f, 1.0f }; 
+</code></pre>
+
+<p>The first variable is just a boolean switch to turn lighting on or off. We set the <b>bLight</b> variable to <i>false</i>. Next up we define the basics of our lighting model, as our <b>ambient light</b>, <b>diffuse light</b> and the <b>light position</b>.</p>
+
+<p><b>Ambient light</b> is light that origins from an unknown source, think of it as the light that is scattered in the scene based on what light exists otherwise. <b>Diffuse light</b> is the known source of the light, eg. the sun or a lamp emitting light. Lastly we add the light position where the light origins form, which is drawn into our scene from that position.</p>
+
+<p>When creating a diffuse light the fourth input in the array is either <b>0.0f</b> for an directional light (a position) or <b>1.0f</b> for a omnipresent lightsource (a direction), and tells if the light is a omnipresent source, like the sun or a local element, like a lamp.</p>
+
+<p>Light has to be enabled for OpenGL to use it, so we need to update our <b>initialize</b> to include lighting in our scene.</p>
+
+<pre><code>
+...
+glClearDepth(1.0f);
+glEnable(GL_LIGHT0);
+glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+glShadeModel(GL_SMOOTH);
+glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+...
+</code></pre>
+
+<p>In this example we only implement one light source, and we use <b>glClearDepth()</b> so that we clear our perspective[...]. Lighting is enabled with <b>glEnable</b>, and Legacy OpenGL supports up to 8 light sources pr scene (<b>GL_LIGHT0</b> - GL_LIGHT7</b>).</p>
+
+<p>We also add the three variables we added in the global space using <b>glLightfv</b> to add the <b>GL_AMBIENT</b>, <b>GL_DIFFUSE</b> and <b>GL_POSITION</b> for our lighting model.</p>
+
+<p><b>glShadeModel</b> is used to enable the way lighting and shading is drawn, so we add <b>GL_SMOOTH</b> to use the built in Geraud Shading. You can also use <b>GL_FLAT</b>. Then we tell OpenGL that we want the <b>GL_NICEST</b> for of Perspective correction, so minimize jagged edges.</p>
+
+<p>The on to our model drawing routing in <b>display</b>. Since light is calculated from it's origin into any given point in our scene we have to define the normals in our scene so that lighting will be calculated correctly. A normal is a perpendicular ray to a particular face on our model.</p>
+
+<p>Lets draw a simple cube which will be illustrated using our light source that we have defined so far.</p>
+
+<pre><code>
+...
+glBegin(GL_QUADS);
+	// TOP
+	glNormal3f(0.0f, 1.0f, 0.0f);
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+
+	// BOTTOM
+	glNormal3f(0.0f, -1.0f, 0.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+
+	// FRONT
+	glNormal3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+
+	// BACK
+	glNormal3f(0.0f, 0.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	// RIGHT
+	glNormal3f(1.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	// LEFT
+	glNormal3f(-1.0f, 0.0f, 0.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+glEnd();
+...
+</code></pre>
+
+<p>All that is left now is to add the lighting to our scene, which we do in the <b>WndProc</b> in our <b>WM_CHAR</b>, so we can turn the light on or off using lowercase or uppercase <b>L</b>.</p>
+
+<pre><code>
+...
+case 'l':
+case 'L':
+	if (bLight == false) {
+		bLight = true;
+		glEnable(GL_LIGHTING);
+	}
+	else {
+		bLight = false;
+		glDisable(GL_LIGHTING);
+	}
+	break;
+...
+</code></pre>
+
+<p>If you compile and run your program now, you'll see the cube is drawn as a completly white, unlit cube, or if you press <b>L</b> as lit by our lightsource.</p>
+
+
+
+
+
+<h1>LESSON 34 - Procedurally drawing a circle pt. 2</h1>
+<h3>Introcution</h3>
+<p></p>
+
 <pre><code>
 
 </code></pre>
@@ -2661,6 +5454,11 @@ case WM_CREATE:
 
 </code></pre>
 
+<p></p>
+
+<pre><code>
+
+</code></pre>
 
 
 
@@ -2732,7 +5530,6 @@ invariant, restricted to the complement of that hyperplane.
 A generalization of an affine transformation is an affine map[1] (or affine homomorphism or affine mapping) between two (potentially different) affine spaces over the same field k. Let (X, V, k) and (Z, W, k) be two 
 affine spaces with X and Z the point sets and V and W the respective associated vector spaces over the field k. 
 A map f: X → Z is an affine map if there exists a linear map mf : V → W such that mf (x − y) = f (x) − f (y) for all x, y in X.[2]
-
 </code></pre>
 
 
@@ -2741,6 +5538,94 @@ Define a Physical Renderer with F1-F12 to toggle rendering mode and positions
 Create a Powered-by newscasting website
 </code></pre>
 
+
+<p>Calculate the normals to display lighting</p>
+<pre><code>
+double[] calculate_normal(double[] a, double[] b, double[] c)
+{
+	double[] <var>x</var> = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
+	double[] <var>y</var> = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+	
+	double[] result = {x[1] * y[2] - y[1] * x[2], -(x[0] * y[2] - y[0]* x[2]), x[0] * y[1] - y[0] * x[1]};
+	return result;
+}
+...
+
+void display()
+{
+	...
+	glBegin(GL_TRIANGLES);
+		glNormal3f(calculate_normal(a, b, c));
+		glVertex2f(...);
+	glEnd();
+}
+</code></pre>
+
+<h3>Rendering Equation</h3>
+
+<p>Full playlist of topics: <a href="https://www.youtube.com/playlist?list=PLplnkTzzqsZS3R5DjmCQsqupu43oS9CFN">https://www.youtube.com/playlist?list=PLplnkTzzqsZS3R5DjmCQsqupu43oS9CFN</a></p>
+
+<h3>Blinn/Phong Material Model</h3>
+
+<pre><code>
+<b>C = I (cos&theta; K<sub>d</sub> + K<sub>s</sub>(cos&phi;<sup>&alpha;</sup>))</b>
+The cosine part inside the parentesis are called the <b>Geometry Term</b>, which is a function of the incoming light to the surface, and can be written as:
+<b>C = I cos&theta; (K<sub>d</sub> + K<sub>s</sub> <sup>(cos&phi;)<sup>&alpha;</sup>)</sup>&frasl;<sub>cos&theta;</sub>)</b>
+This gives a freflectance function: 
+<b>C = I cos&theta; &int;<sub>r</sub>(&omega;, v)</b>
+<b>Note:</b> <i>d</i> in the equation stands for difuse, which is constant over all directions, while <i>s</i> stands for specular and is which depends on the incoming light directions.
+</code></pre>
+
+<pre><code>
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &int; <sub>&Omega;</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>) d&omega;<sub>i</sub></b>
+<img src="C:\Users\Jon\Desktop\Rendering Equation Illustration.png">
+<p>How to interpret this: 
+<a href="https://pbs.twimg.com/media/CHW_bGCUwAAIS1r.png">https://pbs.twimg.com/media/CHW_bGCUwAAIS1r.png</a>  from: <a href="http://viclw17.github.io/2018/06/30/raytracing-rendering-equation/">http://viclw17.github.io/2018/06/30/raytracing-rendering-equation/</a></p>
+
+What if you have a bunch of light sources?
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &Sigma; L<sub>i</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>)</b>
+
+What if light is coming from all directions (above a hemisphere):
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = L<sub>i</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>)</b>
+
+What if you have a sun and a sky the reflects the light:
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &int;<sub>&Omega;</sub> L<sub>sky</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>) d&omega;<sub>i</sub></b>
+<b>          + L<sub>sun</sub> (&omega;<sub>sun</sub>) cos&theta;<sub>sun</sub> f<sub>r</sub> (&omega;<sub>sun</sub>, &omega;<sub>0</sub>)</b>
+
+What if the light is a single source, eg the sun:
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &int;<sub>&Omega;</sub> L<sub>i</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>) d&omega;<sub>i</sub></b>
+
+What if you have a specular surface an a direct and indirect light source:
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &int;<sub>&Omega;</sub> L<sub>i</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>r</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>) d&omega;<sub>i</sub></b>
+<b>L<sub>i</sub>(&omega;<sub>i</sub>) = L<sub>direct</sub>(&omega;i) + L<sub>indirect</sub>(&omega;i)</b>
+
+Subsurface scattering / refraction: 
+<b>L<sub>0</sub>(&omega;<sub>0</sub>) = &int; <sub>S<sup>2</sup></sub> L<sub>i</sub> (&omega;<sub>i</sub>) cos&theta;<sub>i</sub> f<sub>s</sub> (&omega;<sub>i</sub>, &omega;<sub>0</sub>) d&omega;<sub>i</sub></b>
+         <b>+ L<sub>emission</sub>(&omega;<sub>0</sub>)</b>
+
+</code></pre>
+
+
+<p id="note">Newer OpenGL functions: </p>
+
+<i>source: Cem Yuksel</i>
+
+<pre><code>
+#include &lt;glext.h&gt;
+#include &lt;wingdi.h&gt;
+PFNGLGENVERTEXARRAYSPROC glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC) wglGetProcAddress("glGenVertexArrays");
+	
+typedef void (*PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint *arrays);
+</code></pre>
+
+<p>This is the most effective way...</p>
+
+<p>Better way that initialize all the modern OpenGL functions: </p>
+<pre><code>
+#include &lt;glew.h&gt;
+glewInit();
+</code></pre>
+</p>
 
 
 
@@ -2832,8 +5717,119 @@ Create a Powered-by newscasting website
 	<li>Texturing a circle: <a href="https://www.youtube.com/watch?v=GNcFjFmqEc8" target="_blank">https://www.youtube.com/watch?v=GNcFjFmqEc8</a></li>
 	<li>BEST LEGACY OPENGL tutorial pt. 1: Introduction to Computer Graphics (California State Uni.)<a href="http://cse.csusb.edu/tongyu/courses/cs420/notes/intro.php" target="_blank">http://cse.csusb.edu/tongyu/courses/cs420/notes/intro.php</a></li>
 	<li>BEST LEGACY OPENGL tutorial pt. 2: Advanced Computer Graphics (California State Uni.)<a href="http://cse.csusb.edu/tongyu/courses/cs520/notes/texture.php" target="_blank">http://cse.csusb.edu/tongyu/courses/cs520/notes/texture.php</a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
+	<li>Bringing Deferred Lighting to the Next Level Paper: <a href="https://takahiroharada.files.wordpress.com/2015/04/forward_plus.pdf" target="_blank">https://takahiroharada.files.wordpress.com/2015/04/forward_plus.pdf</a></li>
+	<li>Physical Based Shading in Practice: <a href="https://www.youtube.com/watch?v=j-A0mwsJRmk" target="_blank">https://www.youtube.com/watch?v=j-A0mwsJRmk</a></li>
+	<li>Oren / Nayar Lighting Model (Diffuse Alternative)<a href="https://www.youtube.com/watch?v=CLISody-hO4" target="_blank">https://www.youtube.com/watch?v=CLISody-hO4</a></li>
+	<li>gluLookAt example with strafing (in the comments): <a href="https://www.lighthouse3d.com/tutorials/glut-tutorial/keyboard-example-moving-around-the-world/" target="_blank">https://www.lighthouse3d.com/tutorials/glut-tutorial/keyboard-example-moving-around-the-world/</a></li>
+	<li>Autotiling tutorial: <a href="https://gamedev.stackexchange.com/questions/148460/combinations-for-tiling-two-textures-together/148464#148464" target="_blank">https://gamedev.stackexchange.com/questions/148460/combinations-for-tiling-two-textures-together/148464#148464</a></li>
+	<li>3D game shaders for beginners: <a href="https://lettier.github.io/3d-game-shaders-for-beginners/index.html" target="_blank">https://lettier.github.io/3d-game-shaders-for-beginners/index.html</a></li>
+	<li>SoftEther - Open Source VPN client<a href="https://www.softether.org/5-download" target="_blank">https://www.softether.org/5-download</a></li>
+	<li>Invisible Internet Project<a href="https://geti2p.net/en/about/intro" target="_blank">https://geti2p.net/en/about/intro</a></li>
+	<li>Isometric Games Pro and Con: <a href="https://www.youtube.com/watch?v=kQ9-AFYV42Y" target="_blank">https://www.youtube.com/watch?v=kQ9-AFYV42Y</a></li>
+	<li>What is the Furiour Transform? (video): <a href="https://www.youtube.com/watch?v=spUNpyF58BY" target="_blank">https://www.youtube.com/watch?v=spUNpyF58BY</a></li>
+	<li>What is the Furiour Transform? (text): <a href="https://www.3blue1brown.com/lessons/fourier-transforms" target="_blank">https://www.3blue1brown.com/lessons/fourier-transforms</a></li>
+	<li>Cubemap coord: <a href="https://i.stack.imgur.com/8saYJ.png" target="_blank">https://i.stack.imgur.com/8saYJ.png</a></li>
+	<li>Common Teqniques to Improve Shadow Depth (MSDN): <a href="https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN" target="_blank">https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps?redirectedfrom=MSDN</a></li>
+	<li>Alias-Free Shadow Maps (paper)<a href="http://diglib.eg.org/bitstream/handle/10.2312/EGWR.EGSR04.161-166/161-166.pdf?sequence=1&isAllowed=y" target="_blank">http://diglib.eg.org/bitstream/handle/10.2312/EGWR.EGSR04.161-166/161-166.pdf?sequence=1&isAllowed=y</a></li>
+	<li>Realtime Shading (slides)<a href="https://docs.google.com/presentation/d/1MwJcnSvkAzpT8BuoSqIkzlYLjdA_lBDrt8bW-vcwmDU/edit#slide=id.p" target="_blank">https://docs.google.com/presentation/d/1MwJcnSvkAzpT8BuoSqIkzlYLjdA_lBDrt8bW-vcwmDU/edit#slide=id.p</a></li>
+	<li>C socket programming: <a href="https://www.cs.cmu.edu/~srini/15-441/S10/lectures/r01-sockets.pdf" target="_blank">https://www.cs.cmu.edu/~srini/15-441/S10/lectures/r01-sockets.pdf</a></li>
+	<li>Approaching Zero overhead in modern OpenGL: <a href="https://www.reddit.com/r/opengl/comments/qvk0tj/gdc_2014_approaching_zero_driver_overhead/" target="_blank">https://www.reddit.com/r/opengl/comments/qvk0tj/gdc_2014_approaching_zero_driver_overhead/</a></li>
+	<li>Circle Drawing (circular FOV): <a href="https://www.redblobgames.com/grids/circle-drawing/" target="_blank">https://www.redblobgames.com/grids/circle-drawing/</a></li>
+	<li>Fix your FOV (Racing games)<a href="https://www.youtube.com/watch?v=AbbxkX7kS_M" target="_blank">https://www.youtube.com/watch?v=AbbxkX7kS_M</a></li>
+	<li>Roguelike header only lib (C++20): <a href="https://github.com/s9w/oof" target="_blank"></a>https://github.com/s9w/oof</li>
+	<li>How to make a game that sells (reddit-post): <a href="https://www.reddit.com/r/gamedev/comments/r0dik6/how_to_make_a_game_that_sells/" target="_blank">https://www.reddit.com/r/gamedev/comments/r0dik6/how_to_make_a_game_that_sells/</a></li>
+	<li>Procgen: Nature of Code E-book (Math): <a href="https://natureofcode.com/book/" target="_blank">https://natureofcode.com/book/</a></li>
+	<li>Procgen: video tutorial: <a href="https://www.youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3" target="_blank">https://www.youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3</a></li>
+	<li>PS1 Style 3D Renderer: <a href="https://www.david-colson.com/2021/11/30/ps1-style-renderer.html" target="_blank">https://www.david-colson.com/2021/11/30/ps1-style-renderer.html</a></li>
+	<li>OpenAL on Three Platforms: <a href="http://hacksoflife.blogspot.com/2010/11/openal-on-three-platforms.html" target="_blank">http://hacksoflife.blogspot.com/2010/11/openal-on-three-platforms.html</a></li>
+	<li>Write your own linear algebra library in C: <a href="https://www.andreinc.net/2021/01/20/writing-your-own-linear-algebra-matrix-library-in-c" target="_blank">https://www.andreinc.net/2021/01/20/writing-your-own-linear-algebra-matrix-library-in-c</a></li>
+	<li>Raymarching paper by Nvidia: <a href="https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-8-pixel-displacement-mapping-distance-functions" target="_blank">https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-8-pixel-displacement-mapping-distance-functions</a></li>
+	<li>Sphere Tracing paper: <a href="https://graphics.stanford.edu/courses/cs348b-20-spring-content/uploads/hart.pdf" target="_blank">https://graphics.stanford.edu/courses/cs348b-20-spring-content/uploads/hart.pdf</a></li>
+	<li>How to better answer questions online: <a href="https://scottlilly.com/suggestions-on-answering-online-programming-questions/" target="_blank">https://scottlilly.com/suggestions-on-answering-online-programming-questions/</a></li>
+	<li>Pathfinding and movement cost: <a href="https://www.redblobgames.com/pathfinding/a-star/introduction.html" target="_blank">https://www.redblobgames.com/pathfinding/a-star/introduction.html</a></li>
+	<li>OGL physics engine: <a href="https://www.youtube.com/watch?v=zIzlsphGjkY" target="_blank">https://www.youtube.com/watch?v=zIzlsphGjkY</a></li>
+	<li>OGL physics engine camera: <a href="https://www.youtube.com/watch?v=MWf--8wDD5A" target="_blank">https://www.youtube.com/watch?v=MWf--8wDD5A</a></li>
+	<li>BOOK: Texturing and Modelinng: A procedural approach: <a href="https://www.csee.umbc.edu/~ebert/book2e.html" target="_blank">https://www.csee.umbc.edu/~ebert/book2e.html</a></li>
+	<li>Moment Shadow Mapping: <a href="https://therealmjp.github.io/posts/shadow-sample-update/" target="_blank">https://therealmjp.github.io/posts/shadow-sample-update/</a></li>
+	<li>Undo and Redo implementation pt 1: <a href="https://therealmjp.github.io/posts/undo-and-redo/" target="_blank">https://therealmjp.github.io/posts/undo-and-redo/</a></li>
+	<li>Undo and Redo implementation pt 2: <a href="https://therealmjp.github.io/posts/undo-and-redo-take-2/" target="_blank">https://therealmjp.github.io/posts/undo-and-redo-take-2/</a></li>
+	<li>BOOK: OpenGL insights<a href="http://openglinsights.com/index.html" target="_blank">http://openglinsights.com/index.html</a></li>
+	<li>Great video on ECS: <a href="https://www.youtube.com/watch?v=JxI3Eu5DPwE" target="_blank">https://www.youtube.com/watch?v=JxI3Eu5DPwE</a></li>
+	<li>Minecraft in C github: <a href="https://github.com/johnpayne-dev/MinecraftC" target="_blank">https://github.com/johnpayne-dev/MinecraftC</a></li>
+	<li>GCC C Preprocessor: <a href="https://gcc.gnu.org/onlinedocs/cpp/index.html" target="_blank">https://gcc.gnu.org/onlinedocs/cpp/index.html</a></li>
+	<li>Make a clone of this: <a href="https://www.reddit.com/r/gamedev/comments/rtifsj/i_can_finally_say_after_many_many_hotfixes_that_i/" target="_blank">https://www.reddit.com/r/gamedev/comments/rtifsj/i_can_finally_say_after_many_many_hotfixes_that_i/</a></li>
+	<li>PNG file info: <a href="http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html" target="_blank">http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html</a></li>
+	<li>PNG throwaway application in C: <a href="https://gitlab.com/tsoding/png" target="_blank">https://gitlab.com/tsoding/png</a></li>
+	<li>Struct inheritance in C discussion: <a href="https://stackoverflow.com/questions/1114349/struct-inheritance-in-c" target="_blank">https://stackoverflow.com/questions/1114349/struct-inheritance-in-c</a></li>
+	<li>Expert C (e-book): <a href="https://progforperf.github.io/Expert_C_Programming.pdf" target="_blank">https://progforperf.github.io/Expert_C_Programming.pdf</a></li>
+	<li>Bentrleys Rule of Optimization (slides): <a href="https://progforperf.github.io/Bentley_Rules.pdf" target="_blank">https://progforperf.github.io/Bentley_Rules.pdf</a></li>
+	<li>What every programmer should know about memory (e-book): <a href="https://progforperf.github.io/cpumemory.pdf" target="_blank">https://progforperf.github.io/cpumemory.pdf</a></li>
+	<li>Project Based Tutorials In C: <a href="https://github.com/rby90/project-based-tutorials-in-c" target="_blank">https://github.com/rby90/project-based-tutorials-in-c</a></li>
+	<li>C unit testing discussion: <a href="https://www.reddit.com/r/C_Programming/comments/alpnvr/c_unit_testing/" target="_blank">https://www.reddit.com/r/C_Programming/comments/alpnvr/c_unit_testing/</a></li>
+	
+	<p>C JAM notes:</p>
+	<li>Top 10 Daily Tips for Gamedevs: <a href="https://www.reddit.com/r/gamedev/comments/rtpj43/top_10_daily_game_dev_tips_2021/" target="_blank">https://www.reddit.com/r/gamedev/comments/rtpj43/top_10_daily_game_dev_tips_2021/</a></li>
+	<li>Cutscene handling discussion: <a href="https://www.reddit.com/r/gamedev/comments/rtl02s/2d_rpg_cutscene_handling/" target="_blank">https://www.reddit.com/r/gamedev/comments/rtl02s/2d_rpg_cutscene_handling/</a></li>
+	<li>Join if anybody else joins: <a href="https://itch.io/jam/c-jam" target="_blank">https://itch.io/jam/c-jam</a></li>
+	<li><Game AI pro: <a href="http://www.gameaipro.com/" target="_blank">http://www.gameaipro.com/</a></li>
+	<li>Procedural Content Generation in Games: <a href="http://pcgbook.com/" target="_blank">http://pcgbook.com/</a></li>
+	<li>3D Game Shaders for Beginners: <a href="https://lettier.github.io/3d-game-shaders-for-beginners/index.html" target="_blank">https://lettier.github.io/3d-game-shaders-for-beginners/index.html</a></li>
+	<li>Computer Graphics from Skratch: <a href="https://gabrielgambetta.com/computer-graphics-from-scratch/" target="_blank">https://gabrielgambetta.com/computer-graphics-from-scratch/</a></li>
+	<li>OpenGL: How to draw a sphere: <a href="http://www.songho.ca/opengl/gl_sphere.html" target="_blank">http://www.songho.ca/opengl/gl_sphere.html</a></li>
+	<li>Wave Function Collapse library (Take note of the coding): <a href="https://github.com/krychu/wfc" target="_blank">https://github.com/krychu/wfc</a></li>
+	<li>Wave Function Collapse tutorial: <a href="https://www.gridbugs.org/wave-function-collapse/" target="_blank">https://www.gridbugs.org/wave-function-collapse/</a></li>
+	<li>Modified ECS for turnbased games: <a href="https://www.gridbugs.org/modifying-entity-component-system-for-turn-based-games/" target="_blank">https://www.gridbugs.org/modifying-entity-component-system-for-turn-based-games/</a></li>
+	<li>Notes on Axis Angle Rotation: <a href="https://github.com/KadaB/axis_angle_rotation" target="_blank">https://github.com/KadaB/axis_angle_rotation</a></li>
+	<li>The architecture of space-shooter.c: (Nice writeup on a C game in OpenGL)<a href="https://github.com/tsherif/space-shooter.c/blob/master/ARCHITECTURE.md" target="_blank">https://github.com/tsherif/space-shooter.c/blob/master/ARCHITECTURE.md</a></li>
+	<li>Xinput for controller on Windows: <a href="https://docs.microsoft.com/en-us/windows/win32/api/xinput/" target="_blank">https://docs.microsoft.com/en-us/windows/win32/api/xinput/</a></li>
+	<li>Makefiles for C/C++ projects: <a href="https://avikdas.com/2019/12/16/makefiles-for-c-cpp-projects.html" target="_blank">https://avikdas.com/2019/12/16/makefiles-for-c-cpp-projects.html</a></li>
+	<li>Clang Security Analyzer<a href="https://clang.llvm.org/docs/analyzer/checkers.html#security" target="_blank">https://clang.llvm.org/docs/analyzer/checkers.html#security</a></li>
+	<li>Survey of Temporal Antialiasing Technique (Paper)<a href="http://behindthepixels.io/assets/files/TemporalAA.pdf" target="_blank">http://behindthepixels.io/assets/files/TemporalAA.pdf</a></li>
+	<li>Checkerboard Rendering for integrated graphics<a href="https://www.intel.com/content/www/us/en/developer/articles/technical/checkerboard-rendering-for-real-time-upscaling-on-integrated-graphics.html" target="_blank">https://www.intel.com/content/www/us/en/developer/articles/technical/checkerboard-rendering-for-real-time-upscaling-on-integrated-graphics.html</a></li>
+	<li>Dynamic Temporal Antialiasing and Upsampling<a href="https://www.activision.com/cdn/research/Dynamic_Temporal_Antialiasing_and_Upsampling_in_Call_of_Duty_v4.pdf" target="_blank">https://www.activision.com/cdn/research/Dynamic_Temporal_Antialiasing_and_Upsampling_in_Call_of_Duty_v4.pdf</a></li>
+	<li>Tons of good articles and tutorials: <a href="https://www.iquilezles.org/index.html" target="_blank">https://www.iquilezles.org/index.html</a></li>
+	<li>Antialiasing acronyms: <a href="https://twitter.com/Miamiamia0103/status/1490355292487487494/photo/1" target="_blank">https://twitter.com/Miamiamia0103/status/1490355292487487494/photo/1</a></li>
+	<li>Explaining Homogenous Coordinates and Projective Geometry: <a href="https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/" target="_blank">https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/</a></li>
+	<li>OpenGL FAQ and Troubleshooting guide: <a href="https://www.inf.pucrs.br/~flash/tcg/aulas/faq.pdf" target="_blank">https://www.inf.pucrs.br/~flash/tcg/aulas/faq.pdf</a></li>
+	<li>Textmode graphics written in C<a href="https://github.com/saccharineboi/TRex" target="_blank">https://github.com/saccharineboi/TRex</a></li>
+	<li>C Discord Bot: <a href="https://github.com/Cogmasters/concord" target="_blank">https://github.com/Cogmasters/concord</a></li>
+	<li>Higher level programming in C library: <a href="https://libcello.org/" target="_blank">https://libcello.org/</a></li>
+	<li>A static analyzer for C<a href="https://github.com/facebook/infer" target="_blank">https://github.com/facebook/infer</a></li>
+	<li>Darkmode tweak for Win10<a href="https://github.com/adzm/win32-darkmode" target="_blank">https://github.com/adzm/win32-darkmode</a></li>
+	<li>Dark patterns in gaming: <a href="https://www.darkpattern.games/" target="_blank">https://www.darkpattern.games/</a></li>
+	<li>Webgpu for C: <a href="https://github.com/webgpu-native/webgpu-headers/blob/main/webgpu.h" target="_blank">https://github.com/webgpu-native/webgpu-headers/blob/main/webgpu.h</a></li>
+	<li>Digital Forensic Wiki: <a href="https://forensicswiki.xyz/wiki/index.php?title=Main_Page" target="_blank">https://forensicswiki.xyz/wiki/index.php?title=Main_Page</a></li>
+	<li>TUI with double buffering: <a href="https://github.com/velorek1/lynx" target="_blank">https://github.com/velorek1/lynx</a></li>
+	<li>Writeup on how double buffering is done in cmd: <a href="http://oldstuff286.blogspot.com/2017/" target="_blank">http://oldstuff286.blogspot.com/2017/</a></li>
+	<li>How to debug OpenGL: <a href="https://www.youtube.com/watch?v=Wk145_jUsBk" target="_blank">https://www.youtube.com/watch?v=Wk145_jUsBk</a></li>
+	<li>C testing libraries (reddit thread): <a href="https://www.reddit.com/r/cprogramming/comments/tjauxt/commonly_used_cunit_testing_framework_in_2022/" target="_blank">https://www.reddit.com/r/cprogramming/comments/tjauxt/commonly_used_cunit_testing_framework_in_2022/</a></li>
+	<li>OpenGL error checking thread (Stack Overflow): <a href="https://stackoverflow.com/questions/11256470/define-a-macro-to-facilitate-opengl-command-debugging" target="_blank">https://stackoverflow.com/questions/11256470/define-a-macro-to-facilitate-opengl-command-debugging</a></li>
+	<li>OpenGL error lib: BuGLe<a href="https://www.opengl.org/sdk/tools/BuGLe/index.php" target="_blank">https://www.opengl.org/sdk/tools/BuGLe/index.php</a></li>
+	<li>Cgltf loader<a href="https://github.com/jkuhlmann/cgltf" target="_blank">https://github.com/jkuhlmann/cgltf</a></li>
+	<li>3D level design: the essential: <a href="https://wireframe.raspberrypi.com/articles/3d-level-design-the-essential-techniques?fbclid=IwAR2K9aKwfPzN0oksJql8K5OETqw1M0KaBJ4vbE6DBCPWDrb0YsVziutdVM0" target="_blank">https://wireframe.raspberrypi.com/articles/3d-level-design-the-essential-techniques?fbclid=IwAR2K9aKwfPzN0oksJql8K5OETqw1M0KaBJ4vbE6DBCPWDrb0YsVziutdVM0</a></li>
+	<li>Procgen online book: <a href="http://pcgbook.com/" target="_blank">http://pcgbook.com/</a></li>
+	<li>Lots of great win32 api tricks: <a href="http://www.catch22.net/tuts/win32/tips-and-tricks-part-2#" target="_blank">http://www.catch22.net/tuts/win32/tips-and-tricks-part-2#</a></li>
+	<li>Enable custom theme in win32<a href="https://docs.microsoft.com/zh-cn/windows/win32/controls/cookbook-overview" target="_blank">https://docs.microsoft.com/zh-cn/windows/win32/controls/cookbook-overview</a></li>
+	<li>Win32 Hotkey example: <a href="https://zetcode.com/gui/winapi/firststeps/" target="_blank">https://zetcode.com/gui/winapi/firststeps/</a></li>
+	<li>Collision Detection tutorial: <a href="http://www.jeffreythompson.org/collision-detection/index.php" target="_blank">http://www.jeffreythompson.org/collision-detection/index.php</a></li>
+	<li>DirectStorage Windows: <a href="https://github.com/microsoft/DirectStorage" target="_blank">https://github.com/microsoft/DirectStorage</a></li>
+	<liFundations of GE: Vol 2: rendering: ><a href="https://foundationsofgameenginedev.com/FGED2-sample.pdf" target="_blank">https://foundationsofgameenginedev.com/FGED2-sample.pdf</a></li>
+	<li>Paint a landscape with math: <a href="https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/" target="_blank">https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/</a></li>
+	<li>Painting a character with math: <a href="https://www.youtube.com/watch?v=8--5LwHRhjk" target="_blank">https://www.youtube.com/watch?v=8--5LwHRhjk</a></li>
+	<li>Prototypes for modelling: <a href="https://gameprogrammingpatterns.com/prototype.html#prototypes-for-data-modeling" target="_blank">https://gameprogrammingpatterns.com/prototype.html#prototypes-for-data-modeling</a></li>
+	<li>Raytracer for those who skipped math: <a href="https://zserge.com/posts/raytracer/" target="_blank">https://zserge.com/posts/raytracer/</a></li>
+	<li>Deferred Shader Buffer: <a href="https://www.reddit.com/r/GraphicsProgramming/comments/uf4ykj/faster_visibility_bufferdeferred_material/" target="_blank">https://www.reddit.com/r/GraphicsProgramming/comments/uf4ykj/faster_visibility_bufferdeferred_material/</a></li>
+	<li>Notes on Data Structures and Programming in C<a href="http://cs.yale.edu/homes/aspnes/classes/223/notes.html" target="_blank">http://cs.yale.edu/homes/aspnes/classes/223/notes.html</a></li>
+	<li>How to make lowpoly hands look good: <a href="https://www.reddit.com/r/gamedev/comments/urwmab/heres_how_to_achieve_nice_looking_full_five/" target="_blank">https://www.reddit.com/r/gamedev/comments/urwmab/heres_how_to_achieve_nice_looking_full_five/</a></li>
+	<li>Curated list of collision detection stuff: <a href="https://github.com/jslee02/awesome-collision-detection" target="_blank">https://github.com/jslee02/awesome-collision-detection</a></li>
+	<li>Build system (Cmake) example for windows: <a href="https://github.com/Goldan32/c-build-systems/tree/master/windows" target="_blank">https://github.com/Goldan32/c-build-systems/tree/master/windows</a></li>
+	<li>How isometric coordinates work in a game: <a href="https://www.reddit.com/r/gamedev/comments/v2duc7/how_isometric_coordinates_work_in_2d_games/" target="_blank">https://www.reddit.com/r/gamedev/comments/v2duc7/how_isometric_coordinates_work_in_2d_games/</a></li>
+	<li>Procgen: MarkovJunior probabilistic pattern matching (THE best Procgen): <a href="https://github.com/mxgmn/MarkovJunior" target="_blank">https://github.com/mxgmn/MarkovJunior</a></li>
+	<li>Shape library in C99: <a href="https://prideout.net/shapes" target="_blank">https://prideout.net/shapes</a></li>
+	<li>Great Wave Function Collapse video explanation (Reddit thread): <a href="https://www.reddit.com/r/gamedev/comments/v563rn/superpositions_sudoku_the_wave_function_collapse/" target="_blank">https://www.reddit.com/r/gamedev/comments/v563rn/superpositions_sudoku_the_wave_function_collapse/</a></li>
+	<li>Worley noise volumetric clouds example (in clojour)<a href="https://gist.github.com/wedesoft/7ec7d31ac031169ad4c6713ba6ebe598" target="_blank">https://gist.github.com/wedesoft/7ec7d31ac031169ad4c6713ba6ebe598</a></li>
+	<li>Best Win32 Programming Book (5th edition): <a href="https://vulms.vu.edu.pk/Courses/CS410/Downloads/Charles%20Petzold%20-%20Programming%20Windows%20-%205th%20Ed.pdf" target="_blank">https://vulms.vu.edu.pk/Courses/CS410/Downloads/Charles%20Petzold%20-%20Programming%20Windows%20-%205th%20Ed.pdf</a></li>
+	<li>Free Blender 3D model tutorials: <a href="https://quaternius.com/tutorials.html" target="_blank">https://quaternius.com/tutorials.html</a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
@@ -2845,14 +5841,510 @@ Create a Powered-by newscasting website
 	<li><a href="" target="_blank"></a></li>
 </ul>
 
+<pre><code>
+KindFile3 3 poeng 4 timer siden 
+I'd go with Macros:
+
+#include <stdio.h>
+
+#define __timing(f) do { printf("\n\nstarting\n"); f; printf("\nending"); }while(0);
+
+int foo(){
+    printf("foo!");
+}
+
+int bar(int i){
+    printf("bar: %d!",i);
+}
+
+int main(){
+    __timing(foo());
+    __timing(bar(1));
+    return 0;
+}
+This prints:
+
+starting
+foo!
+ending
+
+starting
+bar: 1!
+ending
+Obviously you will need to replace printf("starting") and printf("ending") with the start and end timing functions, which I'd have it globally, so start set current time, and later do the math new time - old time.
+
+And one neat thing about this is you can use _DEBUG flag and have 2 versions like:
+
+#if _DEBUG
+    #define __timing(f) do { printf("\n\nstarting\n"); f; printf("\nending"); }while(0);
+#else
+    #define __timing(f) do { f; }while(0);
+So if NOT in _DEBUG mode you can disable it.
+#endif
+</code></pre>
+
+<pre><code>
+struct point makepoint (int x, int y)
+{
+	struct point temp;
+	
+	temp.x = x;
+	temp.y = y;
+	return temp;
+}
+
+struct rect screen;
+struct point middle;
+struct point makepoint(int, int);
+
+screen.pt1 = makepoint(0, 0);
+screen.pt2 = makepoint(XMAX, YMAX);
+middle = makepoint((screen.pt1.x + screen.pt2.y) / 2, (screen.pt1.y + screen.pt2.y) / 2);
+</code></pre>
+
+<pre><code>
+/* allc.c - This showcases all the syntatic
+ * features of the C programming language.
+ */
+
+
+/* preprocessing directive */
+#if 1                  /* if directive */
+
+#define NULL (void *)0 /* define directive */
+
+#undef NULL            /* undef directive */
+
+#ifdef D               /* ifdef directive */
+#endif
+
+#ifndef D              /* ifndef directive */
+#endif
+
+#pragma deadbeef       /* pragma directive */
+
+#else                  /* else directive */ 
+
+#if defined 0
+#endif
+
+#include <stdio.h>     /* include directive */
+
+#error "error"         /* error directive */
+
+#endif                 /* endif directive */
+
+/* variadic macro */
+#define VAMACRO(...) __VA_ARGS__
+
+/* static assertion */
+_Static_assert(sizeof(char) == 1, "test");
+
+/* stringizing operator */
+#define stringize(x) #x
+
+/* token pasting operator */
+#define concat(a, b) a##b
+
+/* external storage types and example of variadic function */
+extern int printf(const char *, ...);
+
+/* function pointer */
+int (*ifunc)(void);
+
+/* array of function pointer */
+int (*afunc[10])(void);
+
+/* enumerations */
+enum enum_t { EA, EB, EC, ED };
+
+enum { VA, VB, VC, VD } enum_variation;
+
+/* structures */
+struct struct_t {
+  char a, b, c;
+
+  /* bitfields */
+  int b1:4, b2:4;
+
+  /* anonymous union */
+  union {
+    int e, f;
+  };
+};
+
+struct {
+  char a, b, c;
+} struct_variation;
+
+/* unions */
+union union_t {
+  int a, b;
+  /* anonymous struct */
+  struct {
+    int c, d;
+  };
+};
+
+union {char a;}; union_variation;
+
+/* alias for a data type */
+typedef struct struct_t struct_t;
+typedef union union_t union_t;
+typedef enum enum_t enum_t;
+
+/* trigraphs */
+int trigraphsavailable()
+// returns 0 or 1; language standard C99 or later
+{
+  // are trigraphs available??/
+  return 0;
+  return 1;
+}
+
+_Noreturn void noret(void){
+  return;
+}
+
+
+/* function */
+int main() {
+  /* primitive types */
+  char a; int b;  float c;
+  double d;  void *p; float _Complex Co = 1.0+(float _Complex)1.0i;
+  _Bool Bo; 
+
+  /* array declaration */
+  int ar[10];
+
+  /* string literal */
+  u8"Hello " "C";
+  u"Hello " "C";
+  U"Hello " "C";
+  L"Hello " "C";
+
+  /* character literal*/
+  a = 'a';
+
+  /* escape sequence */
+  "\n"   /* newline */
+  "\t"   /* horizontal tab */
+  "\\"   /* backslash */
+  "\f"
+  "\r"   /* carriage return */
+  "\?"
+  "\v";  /* vertical tab */
+
+  /* stringize operator */
+  stringize(Hello C); /* "Hello C" */
+
+  /* Token pasting operator */
+  concat(a, r); /* ar */
+
+  /* demonic array */
+  1 [ar] = 1;
+
+  /* array designated initializer */
+  int ar2[10] = {[0] = 1, [1] = 2, [2] = 3};
+
+  /* struct designated initializer */
+  struct_t s = {.a = 1, .b = 2, .c = 3};
+
+  /* arrow operator */
+  (&s)->a;
+
+  /* dot operator */
+  (struct_t){ }.a = 1;
+  (union_t){ }.a = 1;
+
+  /* compound literals */
+  (int[]){1, 2, 3, 4};
+
+  /* compound literals with designated initializer*/
+  (int[]){[0] = 1, [1] = 2, [2] = 3, 4};
+
+  /* assignment operators */
+  a = 0;   a *= 1;
+  a /= 1;  a += 1;
+  a -= 1;  a <<= 1;
+  a >>= 1; a &= 1;
+  a ^= 1;  a |= 1;
+  a %= 1;
+
+  /* address and indirection operators */
+  &a; *ar;
+
+  /* arithmetic operators */
+  1 + 1; /* ADD */
+  1 - 1; /* SUB */
+  1 / 2; /* DIV */
+  1 * 1; /* MUL */
+  1 % 1; /* MOD */
+
+  /* logical operators */
+  1 && 1; /* AND */
+  1 || 0; /* OR */
+  !1;     /* NOT */
+
+  /* increment and decrement operators */
+  a++; a--; /* post fix */
+  ++a; --a; /* pre fix */
+
+  /* bitwise operators */
+  1 << 2; /* left shift */
+  1 >> 2; /* right shift */
+  1 | 1;  /* OR */
+  1 & 1;  /* AND */
+  1 ^ 1;  /* XOR */
+  ~1;     /* 1st complement */
+
+  /* relational operators */
+  1 > 0;  /* 1 is greater than 0 */
+  1 < 0;  /* 1 is less than 0 */
+  1 == 0; /* 1 is equal to 0 */
+  1 != 0; /* 1 is not equal to 0 */
+  1 >= 0;  /* 1 is greater than or equal to 0 */
+  1 <= 0;  /* 1 is less than or equal to 0 */
+
+  /* conditions */
+  if (1 > 0)
+    ;
+  else
+    ;
+
+  /* ternary operators */
+  (1 > 0) ? 1 : 0; /* if 1 > 0, return 1, else 0 */
+
+  /* label and goto */
+  goto l1;
+l1:
+
+  /* loops */
+  do while(0);
+  while (0)
+    ;
+  for (; 0;)
+    continue;
+    ;
+
+  /* block scoping */
+  {}
+
+  /* switch statement */
+  switch (1){
+    case 0:
+    case 1:
+    default:
+    break;
+  }
+
+  /* digraphs */
+  ar<:0:> = 1;    /* ar[0] */
+  <% %>           /* { } */
+  %:define BEEF   /* #define BEEF */
+
+  /* demonic digraphs */
+  0<:ar:> = 1;
+
+  /* storage-class specifier */
+  static st; register re;
+  auto au; extern ex; _Thread_local static Thr; 
+
+  /* _Generic */
+  _Generic((10), int: 1, char: 'A', default: "test");
+
+  /* type qualifiers */
+  const cons;
+  int *restrict res;
+  volatile vo;
+  _Atomic At;
+
+  /* signed and unsigned types */
+  signed si; unsigned un;
+
+  /* sizeof, _Alignof and _Alignas operators */
+  sizeof(int); _Alignof(int); 
+  _Alignas(4) char calign[4];
+
+  /* integer constants */
+  1;     /* decimal */
+  01  ;  /* octal */
+  0x01;  /* hexadecimal */
+
+  /* floating point constants */
+    /* decimal floating point constant */
+    1.0e+1f;
+    1e1f;
+
+    /* hexadecimal floating point constant */
+    0x01.00p+1f;
+    0x1p+1f;
+
+  /* return keyword */
+  return 0;
+}
+Pretty sure "demonic arrays" was stated in the C standard. ~I just made it up~
+
+Forgive me if I forgotten something. I wonder how it would like with other language like C++.
+
+8 kommentarerdellagregjemgive awardrapportercrosspost
+alle 8 kommentarer
+sorter etter: beste
+formateringshjelpinnholdspolicy
+save
+
+[–]tstanisl 9 poeng 3 timer siden* 
+Missing things:
+
+variadic macro #define M(x, ...)
+__VA_ARGS__,
+_Alignas from C11
+_Atomic
+_Complex
+_Bool
+Edit
+
+const, consider constant pointer
+volatile is not a storage specifier
+comma operator e.g. 1,2
+const/restrict/static/volatile specifier for array parameters:
+
+void foo(int A[restrict const volatile static 42]);
+
+restrict and _Thread_local (thx to u/trBlueJ)
+
+continue
+
+long, including long double
+
+short
+
+_Generic
+
+_Imaginary
+
+_Noreturn
+
+_Static_assert
+
+__func__
+
+u,U,l,L,ul, UL, ll,LL, ull, ULL suffixes for integer literals
+
+u8, u, U, L prefixes for string literals
+
+escape characters e.g. \n, \\
+
+character literals, like 'a'
+
+string literals, "Hello"
+
+unary +, -, and * (dereference)
+
+a ^= 1 is duplicated
+
+macro concatenation ##
+
+macro stringification #
+
+macro defined
+
+trailing comma for initilizers: int A[] = {1,2,3 , }
+
+Edit2: - function calls (thx u/potterman28wxcv ) - bitfields in structs - casts
+
+permalenkeembedlagrerapportergive awardsvar
+
+[–]trBlueJ 2 poeng 2 timer siden 
+There's also _Thread_local.
+
+permalenkeembedlagreforeldrerapportergive awardsvar
+
+[–]potterman28wxcv 2 poeng 2 timer siden 
+And function calls! :P
+
+permalenkeembedlagreforeldrerapportergive awardsvar
+
+[–]tstanisl 3 poeng 3 timer siden 
+you could typedef an enum or a function as well.
+
+typedef enum { E } enum_type;
+typedef int fun_type(int);
+</code></pre>
 <h1>Pro tips</h1>
 <ul>
+	<li>
+	<h3>Camera orientation</h3>
+	<p>Name your cam-, eye- and up-vectors: px, py, pz (or camera_x, ...), vx, vy, vz (view_x, ...), r/ux, r/uy, r/uz (up_x, ...)</p>
+	<pre><code>
+	
+EDIT: I am starting my reply from scratch as I may have assumed too much familiarity with the subject.
+
+The problem you are facing is that your formulas are basically not correct : your formula for rotating left/right are correct under the assumption that the "up" vector (the vector pointing upward from the camera) is always [0 1 0]... which is not the case if you also want to rotate up/down. And your formula for rotating up down is not correct since it only modifies the Y component and rotations do not work that way.
+
+The correct way to handle that is:
+
+to store 3 variables that represent the camera position (as you did). Let's call them Px, Py, Pz
+to store 3 variables that represent the camera view direction (instead of your eyeX/Y/Z that encode the point the camera is looking at). Let's call them Vx, Vy, Vz
+to store 3 variables that represent the camera right vector (or up vector, as you wish). Let's take the right vector, and call it Rx, Ry, Rz.
+Alternatively, you can have a nice "Vector" class that represent vectors instead of storing 3 variables each time. This is a detail at this point.
+
+Now, your method to move your camera forward just becomes:
+
+Px += Vx;
+Py += Vy;
+Pz += Vz;
+You can use, for example, Rodrigues formula to rotate (hoping nobody will launch at you the "quaternion" magic word to express their cleverness ;) ). The general self-contained code to rotate around an arbitrary axis would then be:
+
+// rotate the vector (vx, vy, vz) around (ax, ay, az) by an angle "angle"
+
+void rotate(double &vx, double &vy, double &vz, double ax, double ay, double az, double angle) {
+  double ca = cos(angle);
+  double sa = sin(angle);
+  double crossx = -vy*az + vz*ay;
+  double crossy = -vz*ax + vx*az;
+  double crossz = -vx*ay + vy*ax;
+  double dot = ax*vx + ay*vy + az*vz;
+  double rx = vx*ca + crossx*sa + dot*ax*(1-ca);
+  double ry = vy*ca + crossy*sa + dot*ay*(1-ca);
+  double rz = vz*ca + crossz*sa + dot*az*(1-ca);
+  vx = rx; 
+  vy = ry; 
+  vz = rz;
+}
+And make sure to keep normalized coordinates for your camera vectors.
+
+Now, to specifically rotate your camera up/down when you press a button:
+
+// rotate up:
+rotate(Vx, Vy, Vz, Rx, Ry, Rz, some_CONSTANT_angle);
+// rotate down:
+rotate(Vx, Vy, Vz, Rx, Ry, Rz, - some_CONSTANT_angle);
+To rotate left/right, you first need to compute the "Up" vector that doesn't need to be stored (unless you want to, but it is redundant), and rotate both your view direction and right vectors:
+
+// find up vector using a cross product:
+  double Ux = Ry*Vz - Rz*Vy;
+  double Uy = Rz*Vx - Rx*Vz;
+  double Uz = Rx*Vy - Ry*Vx;
+
+//rotate left
+    rotate(Rx, Ry, Rz, Ux, Uy, Uz, some_CONSTANT_angle);
+    rotate(Vx, Vy, Vz, Ux, Uy, Uz, some_CONSTANT_angle);
+// rotate right
+    rotate(Rx, Ry, Rz, Ux, Uy, Uz, - some_CONSTANT_angle);
+    rotate(Vx, Vy, Vz, Ux, Uy, Uz, - some_CONSTANT_angle);
+Setting up your camera matrix now becomes:
+
+  gluLookAt( Px, Py, Pz, Px+Vx, Py+Vy, Pz+Vz, Rx, Ry, Rz); // or is it Ux, Uy, Uz at the end? don't remember.
+Of course, I didn't test any of this code, and wrote it now. Hope it works!
+	</code></pre>
+	</li>
 	<li>Expand the first chapter with this knowledge: <a href="https://levelup.gitconnected.com/5-computer-hardware-concepts-that-every-programmer-should-know-32711c759dc0" tatget="_blank">https://levelup.gitconnected.com/5-computer-hardware-concepts-that-every-programmer-should-know-32711c759dc0</a></li>
 	<li>
 	<h3>Various GUI library compatable with C</h3>
 	<ul>
 		<li>wxWidget: <a href="https://docs.wxwidgets.org/3.0/overview_helloworld.html" target="_blank">https://docs.wxwidgets.org/3.0/overview_helloworld.html</a></li>
-		<li>LVGL: <a href="https://lvgl.io/" target="_blank">https://lvgl.io/</a></li>
+		<li>LVGL: (https://github.com/lvgl/lvgl) <a href="https://lvgl.io/" target="_blank">https://lvgl.io/</a></li>
 		<li>NAPPGUI: <a href="https://nappgui.com/en/home/web/home.html" target="_blank">https://nappgui.com/en/home/web/home.html</a></li>
 		<li>RayGUI: <a href="https://github.com/raysan5/raygui" target="_blank">https://github.com/raysan5/raygui</a></li>
 		<li>Nuklear: <a href="https://github.com/vurtun/nuklear" target="_blank">https://github.com/vurtun/nuklear</a></li>
@@ -2862,7 +6354,78 @@ Create a Powered-by newscasting website
 		<li>CImGUI: <a href="https://github.com/cimgui/cimgui" target="_blank">https://github.com/cimgui/cimgui</a></li>
 		<li>IUP Portable User Interface<a href="https://www.tecgraf.puc-rio.br/iup/" target="_blank">https://www.tecgraf.puc-rio.br/iup/</a></li>
 		<li>Glade GUI: <a href="https://glade.gnome.org/" target="_blank">https://glade.gnome.org/</a></li>
+		<li>MicroUI: <a href="https://github.com/rxi/microui" target="_blank">https://github.com/rxi/microui</a></li>
 	</ul>
+	</li>
+	<li>
+	<p>
+	Reddit.com/u/alt-no-more
+
+	This is probably a very basic question, but I'm not even sure how to describe it well enough to ask google the answer. I've written a simple program in C that creates a stack via a linked list.
+
+	The stack seems to work as intented, but I get a weird result when I print.
+
+	Here's my code:
+	</p>
+	<pre><code>
+
+	#include <stdio.h>
+	#include <stdlib.h>
+
+	typedef struct node {
+		int data;
+		struct node *next;
+	} node_t;
+
+	typedef struct stack {
+		node_t *head;
+	} stack_t;
+
+	void push(stack_t *stack, int value) {
+		node_t *node = (node_t*) malloc(sizeof(node_t*));
+		node->data = value;
+		node->next = stack->head;
+		stack->head = node;
+	}
+
+	int pop(stack_t *stack) {
+		int value = stack->head->data;
+		stack->head = stack->head->next;
+		return value;
+	}
+
+	int main(void) {
+
+		stack_t *stack1 = (stack_t*) malloc(sizeof(stack_t*));
+		push(stack1, 1);
+		push(stack1, 2);
+		push(stack1, 3);
+		push(stack1, 4);
+		printf("stack1\t");
+		printf("%d ", pop(stack1));
+		printf("%d ", pop(stack1));
+		printf("%d ", pop(stack1));
+		printf("%d\n", pop(stack1));
+
+		stack_t *stack2 = (stack_t*) malloc(sizeof(stack_t*));
+		push(stack2, 1);
+		push(stack2, 2);
+		push(stack2, 3);
+		push(stack2, 4);
+		printf("stack2\t%d %d %d %d\n", pop(stack2), pop(stack2), pop(stack2), pop(stack2));
+
+		return 0;
+	}
+	</code></pre>
+	<p>
+	When I run this, I get the following output:
+
+	stack1  4 3 2 1
+	stack2  1 2 3 4
+	I'm not sure why this is. In stack1, it's clear that everything pops in the correct order.
+
+	There must be something I don't understand about how printf works
+	</p>
 	</li>
 	<li>
 	<h3>PNG libraries for OpenGL</h3>
@@ -3210,7 +6773,7 @@ Create a Powered-by newscasting website
 	#include &lt;windows.h&gt;
 	extern "C" {
 		__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-		__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 0x00000001;;
+		__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 0x00000001;
 	}
 	<i>// Or on one line each</i>: extern "C" __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 	#endif
