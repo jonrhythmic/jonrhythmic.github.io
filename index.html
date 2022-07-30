@@ -225,7 +225,7 @@ more physical pages to the program's address space (for more information on mall
 <p>GLUT (<i>OpenGL Utility Toolkit</i>) is a deprecated application abstraction layer to render OpenGL code, but it's widely used in older projects.</p>
 
 <h2>Set up freeglut</h2>
-<p>To set up your <a href="https://visualstudio.microsoft.com/downloads/" target="_blank">Visual Studio Community 2019</a> to use <b>freeglut</b> download the library from <a href="https://sourceforge.com/" target="_blank">sourceforge.com</a>,
+<p>To set up your <a href="https://visualstudio.microsoft.com/downloads/" target="_blank">Visual Studio Community 2019</a> to use <b>freeglut</b> download the library from <a href="http://freeglut.sourceforge.net/" target="_blank">http://freeglut.sourceforge.net/</a>,
 extract it in a folder like <b>C:\libraries\freeglut\</b> and add it to your projects settings found under <b>Project &lt;%YOUR_PROJECT_NAME%&gt; Properties</b> on the <i>file menu</i>.</p> 
 <p>You have to tell the compiler you want it to look for external libraries by link the library folder under the settings found under:</p>
 	<b>C/C++ &gt; General &gt; Additional Include Directories</b>
@@ -369,6 +369,15 @@ void mouse(int button, int state, int x, int y)
 
 <img src="first-triangle.png" />
 
+<p id="note">Add something about: <b>glutSpecialFunc(keyboard2)</b> and <b>vod keyboard2(int key, int x, int y) {}</b> and dive deeper into an example of <b>glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)</b>. 
+Give an example of a complete game written using all FreeGLUT functions and detail <b>glutGetModifiers();</b>. 
+Also detail <b>glutMotionFunc(myMouseMotion)</b> and <b>void myMouseMotion(int x, int y) {}</b> to handle mouse motion. FreeGLUT will only call this function after a mouse button is pressed and the mouse is moved.
+To detect when a mouse cursor is hovering over an object without being clicked  FreeGLUT has <b>glutPassiveMotionFunc(myMousePassive);</b> and <b>void myMousePassive(int x, int y) {}</b>. <b>Note:</b> All this functions uses the top-left 
+corner of the window for { 0, 0 } !
+Detail more about <b>glutIdleFunc(myIdle);</b> and <b>void myIdle() {}</b>.
+Then there is core functions like: <b>glutInitContextFlags(GLUT_CORE_PROFILE);</b>, <b>glutInitContextVersion(4, 3);</b>, <b>glutInitContextProfile(GLUT_FORWARD_COMPATIBILE);</b> and compatibility functions like: <b>glutInitContextFlags(GLUT_COMPATIBILITY_PROFILE | GLUT_CORE_PROFILE | GLUT_DEBUG);</b>. 
+<b>NOTE:</b> Setting a modern OpenGL version requires <b>GLEW</b>!
+There is also <b>glutGet(GLUT_ELAPSED_TIME);</b> to find elapsed time since last call to glutGet(). Even further there is <b>glutPostRedisplay()</b> which can be called in the idle-function to redisplay the current frame.</p>
 
 
 
@@ -5324,13 +5333,15 @@ draw_sphere(0.2f, 60);
 
 
 
-<h1>LESSON 34 - Rendering light</h1>
+<h1>LESSON 34 - Rendering light pt. 1</h1>
 <h3>Introduction</h3>
 <p>So far this tutorial has been focusing on the lower leverl stuff, and drawing various shapes, but what is a complete scene without lighting and shading?</p>
 
 <p>This lesson we'll start adding lighting to our scene, so as always, lets declare some variables to use when adding light. In our global space add the following:</p>
 
 <pre><code>
+#include &lt;GL/glu.h&gt;
+...
 bool bLight = false;
 GLfloat light_ambient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 0.0f };
@@ -5440,8 +5451,1102 @@ case 'L':
 
 
 
-<h1>LESSON 34 - Procedurally drawing a circle pt. 2</h1>
-<h3>Introcution</h3>
+<h1>LESSON 35 - Rendering light pt. 2</h1>
+<h3>Introduction</h3>
+<p>This time we'll go back to our rendering of a single lightsource, but this time we will add the material component to the lighting as well.</p>
+
+<p>We'll declare the variables we need to handle the light and material in the global scope.</p>
+
+<pre><code>
+#include &lt;GL/glu.h&gt;
+...
+bool bLight = false;
+GLUquadric* quadric = NULL;
+
+GLfloat light_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat light_position[] = { 100.0f, 100.0f, 100.0f, 1.0f };
+
+GLfloat material_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat material_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_shininess[] = { 50.0f };
+...
+</code></pre>
+
+<p>We use the boolean value to handle enabeling or disabeling the lighting in the scene. Then we use the GLU librarys quadric function to draw an object to be lit.</p>
+
+<p>Now comes the interesting part: We define our lightings component with <b>light_ambient</b>, <b>light_diffuse</b>, <b>light_specular</b> and <b>light_position</b>. OpenGL treats this as the lightsource in the scene, and you can think of it as: </p>
+
+<p id="note">Light independent of the object</p>
+
+<p>Next we define the lighting material components with <b>material_ambient</b>, <b>material_diffuse</b>, <b>material_specular</b> and <b>material_shininess</b>. This is the component in the lighting that mixes with the lightsource to form a semi-realistic lighting model. Material can be thought of as: </p>
+
+<p id="note">Lighting that resembles the object</p>
+
+<p>We have to tell OpenGL that we want to enable lighting and material components, so add the following code to our <b>initialize</b>:</p>
+
+<pre><code>
+...
+glEnable(GL_LIGHT0);
+glEnable(GL_DEPTH_TEST);
+glClearDepth(1.0f);
+glDepthFunc(GL_LEQUAL);
+glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+glMaterialfv(GL_FRONT, GL_AMBIENT, material_ambient);
+glMaterialfv(GL_FRONT, GL_DIFFUSE, material_diffuse);
+glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+glShadeModel(GL_SMOOTH);
+glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+...
+</code></pre>
+
+<p>Nothing new, except for the various initialization of <b>glMaterialv(...)</b>.</p>
+
+<p>Continuing on we define the <b>display</b> logic by adding: </p>
+
+<pre><code>
+...
+glTranslatef(0.0f, 0.0f, -0.7f);
+glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+quadric = gluNewQuadric();
+gluSphere(quadric, 0.2f, 30.0f, 30.0f);
+...
+</code></pre>
+
+<p>Short and simple; define the viewing position by traslating the view origin, tell OpenGL we want to draw filled polygons and handle the drawing of an object the GLU way - a sphere in this example.</p>
+
+<p>Last but not least we give the user a way to enable / disable the lighting when pressing 'l' (or 'L') inside our <b>WndProc</b>:</p>
+
+<pre><code>
+...
+case 'l':
+case 'L':
+	if (bLight == false) {
+		bLight = true;
+		glEnable(GL_LIGHTING);
+	}
+	else {
+		bLight = false;
+		glDisable(GL_LIGHTING);
+	}
+	break;
+...
+</code></pre>
+
+<p>If you compile and run this program you should see a white sphere being drawn at the center of the screen, and it will turn into a grey-ish looking sphere with lighting, specular, reflection and material drawn on it when pressing <i>L</i>!</p>
+
+
+
+
+
+
+
+<h1>LESSON 36 - Rendering light pt. 3 </h1>
+<h3>Introduction</h3>
+<p>In todays lecture we'll implement multiple lightsources into our program, so make a simple scene (a 3D triangle) with multiple lightsources.</p>
+
+<p>Begin by adding a few variables in the global scope: </p>
+
+<pre><code>
+bool bLight = false;
+
+struct Light {
+	GLfloat ambient[4];
+	GLfloat diffuse[4];
+	GLfloat specular[4];
+	GLfloat position[4];
+};
+
+struct Light light[2] = {
+	{ 
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ -2.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{ 
+		{ 0.0f, 0.0f, 0.0f, 1.0f }, 
+		{ 0.0f, 0.0f, 1.0f, 1.0f }, 
+		{ 0.0f, 0.0f, 1.0f, 1.0f }, 
+		{ 2.0f, 0.0f, 0.0f, 1.0f }
+	}
+};
+
+GLfloat material_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat material_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_shininess[] = { 50.0f };
+</code></pre>
+
+<p>We declare our boolean switch to enable or disable the lighting, then we add a <b>struct</b> to hold the positional data for the light source. After that we initialize the lighting data with a lightsource coming from the left and one from the right.</p>
+
+<p id="note">The data you store in the struct holding the lighting data is declared in the same order as they were declared in the struct definition!</p>
+
+<p>Then we initialize the lighting and depth functions for OpenGL to handle lighting correctly with the following variables in our <b>initialize</b>:</p>
+
+<pre><code>
+glEnable(GL_DEPTH_TEST);
+glDepthFunc(GL_LEQUAL);
+glShadeModel(GL_SMOOTH);
+glClearDepth(1.0f);
+glEnable(GL_LIGHT0);
+glEnable(GL_LIGHT1);
+
+glLightfv(GL_LIGHT0, GL_AMBIENT, light[0].ambient);
+glLightfv(GL_LIGHT0, GL_DIFFUSE, light[0].diffuse);
+glLightfv(GL_LIGHT0, GL_SPECULAR, light[0].specular);
+glLightfv(GL_LIGHT0, GL_POSITION, light[0].position);
+
+glLightfv(GL_LIGHT1, GL_AMBIENT, light[1].ambient);
+glLightfv(GL_LIGHT1, GL_DIFFUSE, light[1].diffuse);
+glLightfv(GL_LIGHT1, GL_SPECULAR, light[1].specular);
+glLightfv(GL_LIGHT1, GL_POSITION, light[1].position);
+
+glMaterialfv(GL_FRONT, GL_AMBIENT, material_ambient);
+glMaterialfv(GL_FRONT, GL_DIFFUSE, material_diffuse);
+glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+</code></pre>
+
+<p>To have something to shine a light on we have to add something in our <b>display</b> function, so we draw a 3 dimensional triangle with precalculated normals:</p>
+
+<pre><code>
+static float angle = 0.0f;
+glTranslatef(0.0f, 0.0f, -7.0f);
+glRotatef(angle, 0.0f, 1.0f, 0.0f);
+glBegin(GL_TRIANGLES);
+	glNormal3f(0.0f, 0.447214f, 0.894427f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+
+	glNormal3f(0.894427f, 0.447214f, 0.0f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	glNormal3f(0.0f, 0.447214f, -0.894427f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	glNormal3f(-0.894427f, 0.447214f, 0.0f);
+	glVertex3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+glEnd();
+
+angle += 0.05f;
+</code></pre>
+
+<p>To end things off we add a user enabled switch to turn on or off the lightings in our <b>WndProc</b>:</p>
+
+<pre><code>
+case 'l':
+case 'L':
+	if (bLight == false) {
+		bLight = true;
+		glEnable(GL_LIGHTING);
+	}
+	else {
+		bLight = false;
+		glDisable(GL_LIGHTING);
+	}
+	break;
+</code></pre>
+
+<p>Just put it below any other <b>WM_CHAR</b> code you may already have in there.</p>
+
+<p>If you compile and run the program you should see a white, rotating triangle, and if you press <b>l</b> or <b>L</b> it will be lit up with a red and a blue color coming from the left and right side of the triangle.</p>
+
+<p>The entire code for this lesson is found below</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+bool bLight = false;
+
+struct Light {
+	GLfloat ambient[4];
+	GLfloat diffuse[4];
+	GLfloat specular[4];
+	GLfloat position[4];
+};
+
+struct Light light[2] = {
+	{ 
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ -2.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{ 
+		{ 0.0f, 0.0f, 0.0f, 1.0f }, 
+		{ 0.0f, 0.0f, 1.0f, 1.0f }, 
+		{ 0.0f, 0.0f, 1.0f, 1.0f }, 
+		{ 2.0f, 0.0f, 0.0f, 1.0f }
+	}
+};
+
+GLfloat material_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat material_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_shininess[] = { 50.0f };
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		case 'l':
+		case 'L':
+			if (bLight == false) {
+				bLight = true;
+				glEnable(GL_LIGHTING);
+			}
+			else {
+				bLight = false;
+				glDisable(GL_LIGHTING);
+			}
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glShadeModel(GL_SMOOTH);
+	glClearDepth(1.0f);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light[0].ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light[0].diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light[0].specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, light[0].position);
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, light[1].ambient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, light[1].diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, light[1].specular);
+	glLightfv(GL_LIGHT1, GL_POSITION, light[1].position);
+
+	glMaterialfv(GL_FRONT, GL_AMBIENT, material_ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, material_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	static float angle = 0.0f;
+	glTranslatef(0.0f, 0.0f, -7.0f);
+	glRotatef(angle, 0.0f, 1.0f, 0.0f);
+	glBegin(GL_TRIANGLES);
+		glNormal3f(0.0f, 0.447214f, 0.894427f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(-1.0f, -1.0f, 1.0f);
+		glVertex3f(1.0f, -1.0f, 1.0f);
+
+		glNormal3f(0.894427f, 0.447214f, 0.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(1.0f, -1.0f, 1.0f);
+		glVertex3f(1.0f, -1.0f, -1.0f);
+
+		glNormal3f(0.0f, 0.447214f, -0.894427f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(-1.0f, -1.0f, -1.0f);
+		glVertex3f(1.0f, -1.0f, -1.0f);
+
+		glNormal3f(-0.894427f, 0.447214f, 0.0f);
+		glVertex3f(0.0f, 1.0f, 0.0f);
+		glVertex3f(-1.0f, -1.0f, -1.0f);
+		glVertex3f(-1.0f, -1.0f, 1.0f);
+	glEnd();
+
+	angle += 0.05f;
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+
+
+
+
+<h1>LESSON 37 - Redering light pt. 4</h1>
+<h3>Introduction</h3>
+<p>In this lesson we'll again render muliple lightsources, but we'll begin adding transformation to the lightsources. We begin by declaring the variables we need in the global scope:</p>
+
+<pre><code>
+bool bLight = false;
+
+struct Light {
+	GLfloat ambient[4];
+	GLfloat diffuse[4];
+	GLfloat specular[4];
+	GLfloat position[4];
+	GLfloat angle;
+};
+
+struct Light light[3] = {
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ -2.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 1.0f, 0.0f, 1.0f },
+		{ 0.0f, 1.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 1.0f, 1.0f },
+		{ 0.0f, 0.0f, 1.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f, 1.0f }
+	}
+};
+
+GLUquadric* quadric = NULL;
+GLfloat material_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat material_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_shininess[] = { 50.0f, 50.0f, 50.0f };
+</code></pre>
+
+<p>This time we add a variable to handle the angle that the light is pointing in, and initialize all the light variables by defining our <b>struct Light</b>. We'll also declare a sphere using <b>GLU</b> and define the material for lightsources.</p>  
+
+<p>Now we initialize the lighting, the depth handling and shading model in our <b>initialize</b>:</p>
+
+<pre><code>
+...
+glEnable(GL_DEPTH_TEST);
+glDepthFunc(GL_LEQUAL);
+glShadeModel(GL_SMOOTH);
+glClearDepth(1.0f);
+glEnable(GL_LIGHT0);
+glEnable(GL_LIGHT1);
+glEnable(GL_LIGHT2);
+
+glLightfv(GL_LIGHT0, GL_AMBIENT, light[0].ambient);
+glLightfv(GL_LIGHT0, GL_SPECULAR, light[0].specular);
+glLightfv(GL_LIGHT0, GL_DIFFUSE, light[0].diffuse);
+
+glLightfv(GL_LIGHT1, GL_AMBIENT, light[1].ambient);
+glLightfv(GL_LIGHT1, GL_SPECULAR, light[1].specular);
+glLightfv(GL_LIGHT1, GL_DIFFUSE, light[1].diffuse);
+
+glLightfv(GL_LIGHT2, GL_AMBIENT, light[2].ambient);
+glLightfv(GL_LIGHT2, GL_SPECULAR, light[2].specular);
+glLightfv(GL_LIGHT2, GL_DIFFUSE, light[2].diffuse);
+
+glMaterialfv(GL_FRONT, GL_AMBIENT, material_ambient);
+glMaterialfv(GL_FRONT, GL_DIFFUSE, material_diffuse);
+glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+
+glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+...
+</code></pre>
+
+<p>Filling in the <b>display</b> with the lighting, material and the model to be lit, we'll add some rotation to the lightsources, so they will move across the surface of the sphere:</p>
+
+<p>First we instialize the camera angle using <b>gluLookAt</b> and setting it three units back, otherwise pointing in the direction of the object that's being lit.</p>
+
+<p>Next we add a matrix transformation for the first light in the scene, and do the same for the remaining two.</p>
+
+<p>In the end we increment the lightsources position by the floating value of 0.1 so they scan across the surface of the sphere.</p>
+
+<pre><code>
+...
+glPushMatrix();
+	gluLookAt(
+		0.0f, 0.0f, 3.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f
+	);
+	glPushMatrix();
+		glRotatef(light[0].angle, 1.0f, 0.0f, 0.0f);
+		// Updating the position of the light[0], this is startig for the y-direction
+		light[0].position[1] = light[0].angle;
+		glLightfv(GL_LIGHT0, GL_POSITION, light[0].position);
+	glPopMatrix();
+
+	glPushMatrix();
+		glRotatef(light[1].angle, 0.0f, 1.0f, 0.0f);
+		// Update the light[1] by a rotation, like above
+		light[1].position[0] = light[1].angle;
+		glLightfv(GL_LIGHT1, GL_POSITION, light[1].position);
+	glPopMatrix();
+glPopMatrix();
+
+glPushMatrix();
+	glRotatef(light[2].angle, 0.0f, 0.0f, 1.0f);
+	light[2].position[0] = light[2].angle;
+	glLightfv(GL_LIGHT2, GL_POSITION, light[2].position);
+glPopMatrix();
+
+glPushMatrix();
+	glTranslatef(0.0f, 0.0f, -0.7f);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	quadric = gluNewQuadric();
+	gluSphere(quadric, 0.2f, 80.0f, 80.0f);
+glPopMatrix();
+
+light[0].angle += 0.1f;
+light[1].angle += 0.1f;
+light[2].angle += 0.1f; 
+...
+</code></pre>
+
+<p>Go a head and compile your program, and you'll see an unlit, white sphere, but when you press <b>l</b> or <b>L</b> you'll add the lightsources we just added.</p>
+
+<p id="note">The entire sourcecode for this project is found below:</p>
+
+<pre><code>
+#include &lt;windows.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;gl/glu.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "glu32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+bool bLight = false;
+
+struct Light {
+	GLfloat ambient[4];
+	GLfloat diffuse[4];
+	GLfloat specular[4];
+	GLfloat position[4];
+	GLfloat angle;
+};
+
+struct Light light[3] = {
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.0f, 0.0f, 1.0f },		// Red diffuse light
+		{ 1.0f, 0.0f, 0.0f, 1.0f },
+		{ -2.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 1.0f, 0.0f, 1.0f },		// Green diffuse light
+		{ 0.0f, 1.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f, 1.0f }
+	},
+	{
+		{ 0.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 1.0f, 1.0f },		// Blue diffuse light
+		{ 0.0f, 0.0f, 1.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f, 1.0f }
+	}
+};
+
+GLUquadric* quadric = NULL;
+GLfloat material_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLfloat material_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+GLfloat material_shininess[] = { 50.0f, 50.0f, 50.0f };
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		case 'l':
+		case 'L':
+			if (bLight == false) {
+				bLight = true;
+				glEnable(GL_LIGHTING);
+			}
+			else {
+				bLight = false;
+				glDisable(GL_LIGHTING);
+			}
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 37
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glShadeModel(GL_SMOOTH);
+	glClearDepth(1.0f);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light[0].ambient);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light[0].specular);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light[0].diffuse);
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, light[1].ambient);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, light[1].specular);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, light[1].diffuse);
+
+	glLightfv(GL_LIGHT2, GL_AMBIENT, light[2].ambient);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, light[2].specular);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, light[2].diffuse);
+
+	glMaterialfv(GL_FRONT, GL_AMBIENT, material_ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, material_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+	
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glPushMatrix();
+		gluLookAt(
+			0.0f, 0.0f, 3.0f,
+			0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f
+		);
+		glPushMatrix();
+			glRotatef(light[0].angle, 1.0f, 0.0f, 0.0f);
+			// Updating the position of the light[0], this is startig for the y-direction
+			light[0].position[1] = light[0].angle;
+			glLightfv(GL_LIGHT0, GL_POSITION, light[0].position);
+		glPopMatrix();
+
+		glPushMatrix();
+			glRotatef(light[1].angle, 0.0f, 1.0f, 0.0f);
+			// Update the light[1] by a rotation, like above
+			light[1].position[0] = light[1].angle;
+			glLightfv(GL_LIGHT1, GL_POSITION, light[1].position);
+		glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+		glRotatef(light[2].angle, 0.0f, 0.0f, 1.0f);
+		light[2].position[0] = light[2].angle;
+		glLightfv(GL_LIGHT2, GL_POSITION, light[2].position);
+	glPopMatrix();
+
+	glPushMatrix();
+		glTranslatef(0.0f, 0.0f, -0.7f);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		quadric = gluNewQuadric();
+		gluSphere(quadric, 0.2f, 80.0f, 80.0f);
+	glPopMatrix();
+
+	light[0].angle += 0.1f;
+	light[1].angle += 0.1f;
+	light[2].angle += 0.1f; 
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+
+
+
+<h1>LESSON 38 - </h1>
+<h3>Introduction</h3>
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+
+
+
+
+
+<h1>LESSON 39 - </h1>
+<h3>Introduction</h3>
 <p></p>
 
 <pre><code>
@@ -5814,7 +6919,7 @@ glewInit();
 	<li>Collision Detection tutorial: <a href="http://www.jeffreythompson.org/collision-detection/index.php" target="_blank">http://www.jeffreythompson.org/collision-detection/index.php</a></li>
 	<li>DirectStorage Windows: <a href="https://github.com/microsoft/DirectStorage" target="_blank">https://github.com/microsoft/DirectStorage</a></li>
 	<liFundations of GE: Vol 2: rendering: ><a href="https://foundationsofgameenginedev.com/FGED2-sample.pdf" target="_blank">https://foundationsofgameenginedev.com/FGED2-sample.pdf</a></li>
-	<li>Paint a landscape with math: <a href="https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/" target="_blank">https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/</a></li>
+	<li>Paint a landscape with math: AWESOME!<a href="https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/" target="_blank">https://www.reddit.com/r/GraphicsProgramming/comments/u62ssy/painting_a_landscape_using_mathematics/</a></li>
 	<li>Painting a character with math: <a href="https://www.youtube.com/watch?v=8--5LwHRhjk" target="_blank">https://www.youtube.com/watch?v=8--5LwHRhjk</a></li>
 	<li>Prototypes for modelling: <a href="https://gameprogrammingpatterns.com/prototype.html#prototypes-for-data-modeling" target="_blank">https://gameprogrammingpatterns.com/prototype.html#prototypes-for-data-modeling</a></li>
 	<li>Raytracer for those who skipped math: <a href="https://zserge.com/posts/raytracer/" target="_blank">https://zserge.com/posts/raytracer/</a></li>
@@ -5830,6 +6935,38 @@ glewInit();
 	<li>Worley noise volumetric clouds example (in clojour)<a href="https://gist.github.com/wedesoft/7ec7d31ac031169ad4c6713ba6ebe598" target="_blank">https://gist.github.com/wedesoft/7ec7d31ac031169ad4c6713ba6ebe598</a></li>
 	<li>Best Win32 Programming Book (5th edition): <a href="https://vulms.vu.edu.pk/Courses/CS410/Downloads/Charles%20Petzold%20-%20Programming%20Windows%20-%205th%20Ed.pdf" target="_blank">https://vulms.vu.edu.pk/Courses/CS410/Downloads/Charles%20Petzold%20-%20Programming%20Windows%20-%205th%20Ed.pdf</a></li>
 	<li>Free Blender 3D model tutorials: <a href="https://quaternius.com/tutorials.html" target="_blank">https://quaternius.com/tutorials.html</a></li>
+	<li>Domfetch: Find expired domains: <a href="https://www.reddit.com/r/alphaandbetausers/comments/vjno60/domfetchcom_we_created_a_free_tool_where_you_can/" target="_blank">https://www.reddit.com/r/alphaandbetausers/comments/vjno60/domfetchcom_we_created_a_free_tool_where_you_can/</a></li>
+	<li>Soccer AI write-up: <a href="http://properlydecent.com/blog/soccer_game_development_concepts/" target="_blank">http://properlydecent.com/blog/soccer_game_development_concepts/</a></li>
+	<li>Reddit question regarding soccer AI: <a href="https://www.reddit.com/r/howdidtheycodeit/comments/vkjoo9/ai_positioning_in_sports_games_like_fifa/" target="_blank">https://www.reddit.com/r/howdidtheycodeit/comments/vkjoo9/ai_positioning_in_sports_games_like_fifa/</a></li>
+	<li>Perlin Noise writeup: <a href="https://eev.ee/blog/2016/05/29/perlin-noise/" target="_blank">https://eev.ee/blog/2016/05/29/perlin-noise/</a></li>
+	<li>Procgen math with personallity (video): <a href="https://www.youtube.com/watch?v=KPoeNZZ6H4s" target="_blank">https://www.youtube.com/watch?v=KPoeNZZ6H4s</a></li>
+	<li>Triangular grid: <a href="https://kvachev.com/blog/posts/triangular-grid/" target="_blank">https://kvachev.com/blog/posts/triangular-grid/</a></li>
+	<li>Code examples for drawing shapes: <a href="https://iquilezles.org/articles/distfunctions2d/" target="_blank">https://iquilezles.org/articles/distfunctions2d/</a></li>
+	<li>Ambient Occlusion presentation by Microsoft:<a href="https://developer.download.nvidia.com/presentations/2008/SIGGRAPH/HBAO_SIG08b.pdf" target="_blank">https://developer.download.nvidia.com/presentations/2008/SIGGRAPH/HBAO_SIG08b.pdf</a></li>
+	<li>SSAO ambient occlusion by John Chapman: <a href="http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html" target="_blank">http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html</a></li>
+	<li>Tile Bitmask: <a href="https://gamedevelopment.tutsplus.com/tutorials/how-to-use-tile-bitmasking-to-auto-tile-your-level-layouts--cms-25673" target="_blank">https://gamedevelopment.tutsplus.com/tutorials/how-to-use-tile-bitmasking-to-auto-tile-your-level-layouts--cms-25673</a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
