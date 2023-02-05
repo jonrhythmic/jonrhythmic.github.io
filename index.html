@@ -49,7 +49,7 @@
 	<li><a href="#fog-effect">LESSON 40 - Implementing fog</a></li>
 	<li><a href="#improved-rendering">LESSON 41 - Improving draw calls and texture tiling</li>
 	<li><a href="#revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline</li>
-	<li><a href="#programmable-pipeline">LESSON 43 - Programmable Pipelines</li>
+	<li><a href="#programmable-pipeline">LESSON 43 - Programmable pipelines</li>
 	<li><a href=""></a></li>
 	<li></li>
 	<li></li>
@@ -7985,7 +7985,7 @@ c) Perspective divide &rarr; culling
 
 
 
-<h1><a name="programmable-pipeline">LESSON 43 - Programmable Pipelines</a></h1>
+<h1><a name="programmable-pipeline">LESSON 43 - Programmable pipelines</a></h1>
 <h3>Introduction</h3>
 <p>Pipeline has an order. There are two types of rendering; realtime rendering and offline rendering.</p>
 
@@ -8022,7 +8022,7 @@ c) Perspective divide &rarr; culling
 
 <p>A transformation is the journy of a vertice from it's local space to the clip space.</p>
 
-<p>Local Space &rarr; World Space &rarr; Wolrd View Space &rarr; Clip Space</p>
+<p>Local Space &rarr; World Space &rarr; World View Space &rarr; Clip Space</p>
 
 <p>All this is the work of the VERTEX SHADER.</p>
 
@@ -10166,31 +10166,31 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 <h3>RPG roguelike tool with ASCII chars</h3>
 
 <style>
-ul {
-	display: flex;
-	flex-direction: row;
-	flex-wrap: wrap;
-	margin: auto 0;
-}
+<!-- ul { -->
+	<!-- display: flex; -->
+	<!-- flex-direction: row; -->
+	<!-- flex-wrap: wrap; -->
+	<!-- margin: auto 0; -->
+<!-- } -->
 
-li {
-	margin: 1rem auto;
-	padding: 1rem;
-	border: 1px dashed green;
-	list-style-type: none;
-	text-decoration: none;
-	min-width: 20rem;
-	width: 30%;
-	min-height: 40rem;
-	height: 25%;
+<!-- li { -->
+	<!-- margin: 1rem auto; -->
+	<!-- padding: 1rem; -->
+	<!-- border: 1px dashed green; -->
+	<!-- list-style-type: none; -->
+	<!-- text-decoration: none; -->
+	<!-- min-width: 20rem; -->
+	<!-- width: 30%; -->
+	<!-- min-height: 40rem; -->
+	<!-- height: 25%; -->
 	
-}
+<!-- } -->
 
-a {
-	color: powerblue;
-	background: tomato;
-	font-family: "Helvetica, Arial, sans-serif";
-}
+<!-- a { -->
+	<!-- color: powerblue; -->
+	<!-- background: tomato; -->
+	<!-- font-family: "Helvetica, Arial, sans-serif"; -->
+<!-- } -->
 </style>
 
 <script>
@@ -10266,12 +10266,13 @@ a {
 	let text = "";
 	//keywords.forEach(syntax_highlight, code);
 	
-	function show_index (index) {
-		index.forEach(list => {
-			list.style.listStyleType = "none";
-			list.style.height = "100vh";
-		});
-	}
+	<!-- function show_index (index) { -->
+		<!-- index.forEach(list => { -->
+			<!-- list.style.listStyleType = "none"; -->
+			<!-- list.style.height = "100vh"; -->
+		<!-- }); -->
+	<!-- } -->
+	
 	function details_styling (summary) {
 		summary.forEach(item => {
 			item.style.paddingLeft = "1rem";
