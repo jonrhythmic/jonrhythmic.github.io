@@ -7924,7 +7924,7 @@ glEnd();
 
 
 
-<h1><a name="revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline</a></h1>
+<h1><a name="revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline (Summary of legacy OpenGL)</a></h1>
 <h3>Introduction</h3>
 <p>CPU - RAM - HDD - GPU</p>
 
@@ -9092,8 +9092,8 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	</p>
 	<pre><code>
 
-	#include <stdio.h>
-	#include <stdlib.h>
+	#include &gt;stdio.h&lt;
+	#include &gt;stdlib.h&lt;
 
 	typedef struct node {
 		int data;
@@ -9106,14 +9106,14 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 
 	void push(stack_t *stack, int value) {
 		node_t *node = (node_t*) malloc(sizeof(node_t*));
-		node->data = value;
-		node->next = stack->head;
-		stack->head = node;
+		node-&lt;data = value;
+		node-&lt;next = stack-&lt;head;
+		stack-&lt;head = node;
 	}
 
 	int pop(stack_t *stack) {
-		int value = stack->head->data;
-		stack->head = stack->head->next;
+		int value = stack-&lt;head-&lt;data;
+		stack-&lt;head = stack-&lt;head-&lt;next;
 		return value;
 	}
 
