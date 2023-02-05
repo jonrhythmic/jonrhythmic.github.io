@@ -9092,8 +9092,8 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	</p>
 	<pre><code>
 
-	#include &gt;stdio.h&lt;
-	#include &gt;stdlib.h&lt;
+	#include &lt;stdio.h&gt;;
+	#include &lt;stdlib.h&gt;;
 
 	typedef struct node {
 		int data;
@@ -9106,14 +9106,14 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 
 	void push(stack_t *stack, int value) {
 		node_t *node = (node_t*) malloc(sizeof(node_t*));
-		node-&lt;data = value;
-		node-&lt;next = stack-&lt;head;
-		stack-&lt;head = node;
+		node-&gt;data = value;
+		node-&gt;next = stack-&gt;head;
+		stack-&gt;head = node;
 	}
 
 	int pop(stack_t *stack) {
-		int value = stack-&lt;head-&lt;data;
-		stack-&lt;head = stack-&lt;head-&lt;next;
+		int value = stack-&gt;head-&gt;data;
+		stack-&gt;head = stack-&gt;head-&gt;next;
 		return value;
 	}
 
