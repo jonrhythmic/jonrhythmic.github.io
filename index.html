@@ -9003,7 +9003,8 @@ typedef int fun_type(int);
 	
 EDIT: I am starting my reply from scratch as I may have assumed too much familiarity with the subject.
 
-The problem you are facing is that your formulas are basically not correct : your formula for rotating left/right are correct under the assumption that the "up" vector (the vector pointing upward from the camera) is always [0 1 0]... which is not the case if you also want to rotate up/down. And your formula for rotating up down is not correct since it only modifies the Y component and rotations do not work that way.
+The problem you are facing is that your formulas are basically not correct : your formula for rotating left/right are correct under the assumption that the "up" vector (the vector pointing upward from the camera) is always [0 1 0]... which is not the case if you also want to rotate up/down. 
+And your formula for rotating up down is not correct since it only modifies the Y component and rotations do not work that way.
 
 The correct way to handle that is:
 
