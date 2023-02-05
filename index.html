@@ -1,5 +1,11 @@
+<!DOCTYPE html>
+<head lang="en">
+	<base target="_blank" rel="noopener">
+</head>
+
 <h1>OpenGL C programming tutorial (Win32 API)</h1>
 <h3><a name="#overview">Lessons overview</a></h3>
+
 <ul class="index">
 	<li><a href="#sdk">LESSON 1 - SDK</a></li>
 	<li><a href="#legacy-opengl">LESSON 2 - Legacy code</a></li>
@@ -41,9 +47,10 @@
 	<li><a href="#lighting-pt4">LESSON 38 - Rendering light pt. 4</a></li>
 	<li><a href="#texture-sphere">LESSON 39 - Texturing a sphere</a></li>
 	<li><a href="#fog-effect">LESSON 40 - Implementing fog</a></li>
-	<li></li>
-	<li></li>
-	<li></li>
+	<li><a href="#improved-rendering">LESSON 41 - Improving draw calls and texture tiling</li>
+	<li><a href="#revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline</li>
+	<li><a href="#programmable-pipeline">LESSON 43 - Programmable Pipelines</li>
+	<li><a href=""></a></li>
 	<li></li>
 	<li></li>
 	<li></li>
@@ -64,34 +71,11 @@
 
 
 <h1><a name="sdk">LESSON 1: SDK</a></h1>
+
+
 <div id="update"></div>
 
-<table style="width:100%">
-	<caption>Win32 Toolchain</caption>
-	<thead>
-		<tr>
-			<th>Compulsary tools</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td rowspan="5" style="text-align:top">Toolchain &rarr;</td>
-		</tr>
-		<tr>
-			<td>Linker</td>
-		</tr>
-		<tr>
-			<td>Loader</td>
-		</tr>
-		<tr>
-			<td>Compiler</td>
-		</tr>
-		<tr>
-			<td>Assembler, diassembler, debugger</td>
-		</tr>
-		
-	</tbody>
-</table>
+
 
 <h2>Software Development Kit</h2>
 <label><b>Compulsary</b></label>
@@ -106,7 +90,7 @@
 	</li>
 	<li><b>API LIbraries</b> &rarr; <ol type="1"><li>Procedural Oriented</li> <li>Object Oriented</li></ol></li>
 	<li><b>Documentation</b> &rarr; MSDN</li>
-	<li><b>Header File</b> (C) / <b>Packages</b> (Java) / <b>Namespaces</b> (Cpp) &rarr; Languages packages containing</li>
+	<li><b>Header File</b> (C) / <b>Packages</b> (Java) / <b>Namespaces</b> (Cpp) &rarr; Languages packages containing [...]</li>
 </ol>
 <label><b>Optional</b></label>
 <ol type="1" start="5">
@@ -133,8 +117,9 @@ int main()
 <p><b>Note on compilers:</b> 
 	<a href="https://courses.cs.washington.edu/courses/cse378/97au/help/compilation.html"></a>
 </p>
-
-<p> <!__ This section is stolen, see link below -->
+<details>
+<summary>Compiler notes</summary>
+<p> <!-- This section is stolen, see link below -->
 <img src="https://courses.cs.washington.edu/courses/cse378/97au/help/cc.gif" alt="cc from "https://courses.cs.washington.edu/courses/cse378/97au/help/cc.gif"" />
 <p>
 	First, the C preprocessor cpp expands all those macros definitions and include statements (and anything else that starts with a #) and passes the result to the actual compiler. The preprocessor is not so interesting 
@@ -198,7 +183,7 @@ more physical pages to the program's address space (for more information on mall
 	restores the callee-saved registers. It then pops the stack frame and jumps to the return address.
 </p>
 </p>
-
+</details>
 
 
 <p>Microsoft Visual Studio Communitys compiler is called <i>cl.exe</i>, and can be invoked through the commandline by calling cl.exe &lt;<i>filename</i>&gt; - where filename is a CSV of sourcefile(s) you are compiling.</p>
@@ -227,7 +212,7 @@ more physical pages to the program's address space (for more information on mall
 
 <p><b>More on legacy OpenGL:</b> doesn't support reading and writing graphical images (PNG, JPG, etc).</p>
 
-<p><b>Programmable Pipeline</b> (eg. Vulcan, modern OpenGL) - you can customize the pipeline</p>
+<p><b>Programmable Pipeline</b> (eg. Vulkan, modern OpenGL) - you can customize the pipeline</p>
 <ul>
 	<li>Vertex shader (VS) &rarr; Each vertex</li>
 	<li>Tesselation shader (TS) &rarr; Level of details</li>
@@ -235,6 +220,12 @@ more physical pages to the program's address space (for more information on mall
 	<li>Fragment shader (FS) &rarr; Manipulate each pixel</li>
 </ul>
 <p>Eg. Cooking chicken - you add the Chicken (VS) &rarr; Masala (TS) &rarr; Salt (GS) &rarr; Each piece (FS)</p>
+
+<p id="note">
+Further improvements: 
+- Define the fixed functional pipeline in more details
+</p>
+
 
 
 
@@ -7907,7 +7898,139 @@ bool load_texture(GLuint* texture, TCHAR imageResourceId[])
 
 
 
-<h1><a name="">LESSON 41 - </a></h1>
+<h1><a name="improved-rendering">LESSON 41 - Improving draw calls and texture tiling</a></h1>
+<h3>Introduction</h3>
+<p>To repeatedly load a seamless texture OpenGL uses texture tiling, as demonstrated in the example code beneath: </p>
+
+<pre><code>
+glBegin(GL_QUADS);
+	// Texture tiling
+	glTexCoord2f(50.0f, 50.0f); 
+	glVertex2f(1.0f, 1.0f);
+
+	glTexCoord2f(0.0f, 50.0f);
+	glVertex2f(-1.0f, 1.0f);
+
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(-1.0f, -1.0f);
+
+	glTexCoord2f(50.0f, 0.0f);
+	glVertex2f(1.0f, -1.0f);
+glEnd();
+</code></pre>
+
+<p>A good practice of making drawcalls in OpenGL is to avoid looping, like a for() or while()-loop.</p>
+
+
+
+
+<h1><a name="revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline</a></h1>
+<h3>Introduction</h3>
+<p>CPU - RAM - HDD - GPU</p>
+
+<p>The program and instructions are loaded from the HDD to the RAM. CPU then handles the instructions that are called (and executes them), the CPU calls the device driver for your GPU which renders in the VRAM (attached to the framebuffer).</p>
+
+<p>There are two types of pipelines: Fixed Functional Pipeline, or a Programmable Pipeline (which is an extension of the FFP adding shaders).</p>
+
+<p>FFP: You can't controll over the data, you just pass it to the pipeline which has predefined stages.</p>
+
+<pre><code>
+1. Pre-vertex Stage - You pass the vertices to the pipeline
+2. Vertex Stage 
+a. Transformation 
+   a) Position (in x, y and x-axis)
+   b) Rotation ()
+   c) Scaling
+Our vertices are in the local space.
+
+Everything in Computer Graphcis is Matrix. 
+
+a) Local Space will multiply it to Transformation Matrix and this will result in the Model Matrix.
+b) Camera - Model matrix will get multiplied with camera (lookAt) matrix and will result in ModelView Space matrix.
+c) ModelView Space matrix gets multiplied with the Projection Matrix and will result in Clip Space
+ 
+
+3. Post Vertex Stage
+a) Primitive Assembly 
+b) Viewport clipping / mapping
+c) Perspective divide &rarr; culling
+
+4) Rasterizer Stage
+5) Fragment Stage
+6) Per Framebuffer tests
+   a) Pixel Ownership
+   b) Scissor tests
+   c) Blend tests
+   d) Depth tests
+   e) Logic op
+   f) Stencil tests
+   g) Dithering tests
+   h) Alpha tests
+   
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+<p></p>
+
+<pre><code>
+
+</code></pre>
+
+
+
+
+<h1><a name="programmable-pipeline">LESSON 43 - Programmable Pipelines</a></h1>
+<h3>Introduction</h3>
+<p>Pipeline has an order. There are two types of rendering; realtime rendering and offline rendering.</p>
+
+<p>Realtime rendering occures in real time and is handled in code, unlike offline rendering, which is pre-rendered and stored in eg. a videoformat and displayed by a video player.</p>
+
+<h3>Attributes for the pipeline</h3>
+<p>Vertices, Normals, Texture coordinates &rarr; added into the pipeline.</p>
+
+<p>Vertices: Is just a point inside the space...</p>
+
+<p>1. Vertex spesification: Here you give the vertices as an input.</p>
+
+<p>The vertex is inside pipeline</p>
+
+<p>a) Transformation (Order doesn't matter here)</p>
+<p>1: Translate 2: Rotate 3: Scale</p>
+
+<h3>Projection</h3>
+<p>two types - orthographic (bounding box) and perspective (v-shape viewfrustum) - perspective is a (fake) volume in "3D" projected onto a 2D screen.</p>
+
+<p>Orthographic: ()</p>
+
+<p>Matrix: Only way to store the 3D volume. It's basically an array (2D or 3D).</p>
+
+<p>Vertex gets multiplied with the (internal matrix of...) translate, rotate and scale. Here the order matter.</p>
+
+<p>It will result into the world matrix. (The result of the vertex matrix multiplied by the translate, rotate, scale matrix)</p>
+
+<p>Now you define the view (if you don't it gets set to <b>{0, 0, 0}</b>).</p>
+
+<p>World matrix will get multiplied with the camera matrix and will result in the World View Matrix</p>
+
+<p>World View Matrix will get multiplied with the Projection Matrix and will result in the Clip Matrix.</p>
+
+<p>A transformation is the journy of a vertice from it's local space to the clip space.</p>
+
+<p>Local Space &rarr; World Space &rarr; Wolrd View Space &rarr; Clip Space</p>
+
+<p>All this is the work of the VERTEX SHADER.</p>
+
+
+
+
+
+<h1><a name="">LESSON 44 - </a></h1>
 <h3>Introduction</h3>
 <p></p>
 
@@ -7929,7 +8052,8 @@ bool load_texture(GLuint* texture, TCHAR imageResourceId[])
 
 
 
-<h1><a name="">LESSON 42 - </a></h1>
+
+<h1><a name="">LESSON 45 - </a></h1>
 <h3>Introduction</h3>
 <p></p>
 
@@ -7948,6 +8072,7 @@ bool load_texture(GLuint* texture, TCHAR imageResourceId[])
 <pre><code>
 
 </code></pre>
+
 
 
 
@@ -8382,6 +8507,40 @@ glewInit();
 	<li>Continuous Distance-Dependent Level of Detail for Rendering Heightmaps: <a href="https://aggrobird.com/files/cdlod_latest.pdf" target="_blank">https://aggrobird.com/files/cdlod_latest.pdf</a></li>
 	<li>Poolballs in glsl only example: <a href="https://www.getlazarus.org/pool/balls/" target="_blank">https://www.getlazarus.org/pool/balls/</a></li>
 	<li>Procgen animal drawing + walking cycle: <a href="https://video.twimg.com/tweet_video/DXSke1eWkAAbj6b.mp4" target="_blank">https://video.twimg.com/tweet_video/DXSke1eWkAAbj6b.mp4</a></li>
+	<li>Formula for various shapes: <a href="https://iquilezles.org/articles/distfunctions/" target="_blank">https://iquilezles.org/articles/distfunctions/</a></li>
+	<li>Signed Distance Fields of a box (procgen): <a href="https://www.youtube.com/watch?v=62-pRVZuS5c" target="_blank">https://www.youtube.com/watch?v=62-pRVZuS5c</a></li>
+	<li>Raymarching implementation writeup: <a href="https://tavianator.com/2022/ray_box_boundary.html" target="_blank">https://tavianator.com/2022/ray_box_boundary.html</a></li>
+	<li>Qubic noise: <a href="https://jobtalle.com/cubic_noise.html" target="_blank">https://jobtalle.com/cubic_noise.html</a></li>
+	<li>Olive.c graphics lib that renders to the browser: <a href="https://tsoding.org/olive.c/" target="_blank">https://tsoding.org/olive.c/</a></li>
+	<li>Awesome Github Readme Profile List: <a href="https://github.com/MrAlpha786/awesome-github-profile-readme" target="_blank">https://github.com/MrAlpha786/awesome-github-profile-readme</a></li>
+	<li>Blue Noise Dithering clouds: <a href="https://www.wedesoft.de/software/2022/09/21/blue-noise-dithering/" target="_blank">https://www.wedesoft.de/software/2022/09/21/blue-noise-dithering/</a></li>
+	<li>Neural Control Variates Light simulation paper: <a href="https://arxiv.org/pdf/2006.01524.pdf" target="_blank">https://arxiv.org/pdf/2006.01524.pdf</a></li>
+	<li>Hot reloading example: <a href="https://github.com/M-Fatah/hot_reloading_with_cmake" target="_blank">https://github.com/M-Fatah/hot_reloading_with_cmake</a></li>
+	<li>Write a game engine in C: <a href="https://prdeving.wordpress.com/category/game-development/" target="_blank">https://prdeving.wordpress.com/category/game-development/</a></li>
+	<li>Game Engine Architecture articles: <a href="https://www.haroldserrano.com/articles#gameenginesection" target="_blank">https://www.haroldserrano.com/articles#gameenginesection</a></li>
+	<li>Quaternions explanation: <a href="https://lordarkam.wordpress.com/2022/08/28/quaternions-a-geometrical-interpretation/" target="_blank">https://lordarkam.wordpress.com/2022/08/28/quaternions-a-geometrical-interpretation/</a></li>
+	<li>Real-Time Polygonal-Light Shading with Linearly Transformed Cosines (paper): <a href="https://drive.google.com/file/d/0BzvWIdpUpRx_d09ndGVjNVJzZjA/view?resourcekey=0-21tmiqk55JIZU8UoeJatXQ" target="_blank">https://drive.google.com/file/d/0BzvWIdpUpRx_d09ndGVjNVJzZjA/view?resourcekey=0-21tmiqk55JIZU8UoeJatXQ</a></li>
+	<li>Create a shared and static library with GNU compiler: <a href="https://renenyffenegger.ch/notes/development/languages/C-C-plus-plus/GCC/create-libraries/index" target="_blank">https://renenyffenegger.ch/notes/development/languages/C-C-plus-plus/GCC/create-libraries/index</a></li>
+	<li>Contructive Solid Geometry video: <a href="https://www.youtube.com/watch?v=Iqmg4gblreo" target="_blank">https://www.youtube.com/watch?v=Iqmg4gblreo</a></li>
+	<li>CSG examples and demo:<a href="https://realtimecsg.com/" target="_blank">https://realtimecsg.com/</a></li>
+	<li>Cube Map generation detailed example: <a href="https://logins.github.io/graphics/2022/09/26/CubemapGenerationWithOpenCV.html" target="_blank">https://logins.github.io/graphics/2022/09/26/CubemapGenerationWithOpenCV.html</a></li>
+	<li>Importance based shadow mapping article: <a href="http://john-chapman-graphics.blogspot.com/2013/01/shadow-map-allocation.html" target="_blank">http://john-chapman-graphics.blogspot.com/2013/01/shadow-map-allocation.html</a></li>
+	<li>libSQL repo: <a href="https://github.com/libsql/libsql" target="_blank">https://github.com/libsql/libsql</a></li>
+	<li>Makefile tutorial: <a href="https://github.com/clemedon/Makefile_tutor" target="_blank">https://github.com/clemedon/Makefile_tutor</a></li>
+	<li>How Raytracing works and how CGI uses it (reddit thread): <a href="https://www.reddit.com/r/GraphicsProgramming/comments/y0xjh2/how_ray_tracing_modern_cgi_works_and_how_to_do_it/" target="_blank">https://www.reddit.com/r/GraphicsProgramming/comments/y0xjh2/how_ray_tracing_modern_cgi_works_and_how_to_do_it/</a></li>
+	<li>FFmpeg cheatsheet: <a href="https://gist.github.com/steven2358/ba153c642fe2bb1e47485962df07c730" target="_blank">https://gist.github.com/steven2358/ba153c642fe2bb1e47485962df07c730</a></li>
+	<li>Reflections from local cubemap: <a href="https://developer.arm.com/documentation/102179/0100/Implement-reflections-with-a-local-cubemap" target="_blank">https://developer.arm.com/documentation/102179/0100/Implement-reflections-with-a-local-cubemap</a></li>
+	<li>Realtime ray tracing in games: <a href="https://www.intel.com/content/www/us/en/developer/articles/guide/real-time-ray-tracing-in-games.html" target="_blank">https://www.intel.com/content/www/us/en/developer/articles/guide/real-time-ray-tracing-in-games.html</a></li>
+	<li>Windows Alternate Data Stream (hacking): <a href="https://www.bleepingcomputer.com/tutorials/windows-alternate-data-streams/" target="_blank">https://www.bleepingcomputer.com/tutorials/windows-alternate-data-streams/</a></li>
+	<li>Pixel perfect collition detection in C: <a href="https://www.reddit.com/r/C_Programming/comments/108idah/pixel_perfect_collision_detection_in_c/" target="_blank">https://www.reddit.com/r/C_Programming/comments/108idah/pixel_perfect_collision_detection_in_c/</a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
+	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
@@ -8394,6 +8553,16 @@ glewInit();
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 </ul>
+
+
+
+
+
+<pre><code>
+FUN FACT
+
+There are 365.2422 days in a Solar year. The average Gregorian calendar year has 365.2425 days. There is a 0.0003 day difference between the Gregorian and the Solar years. For this reason the Gregorian calendar will advance 1 day every 3,333 years.
+</code></pre>
 
 <pre><code>
 KindFile3 3 poeng 4 timer siden 
@@ -9996,7 +10165,33 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 <h3>DLL devops</h3>
 <h3>RPG roguelike tool with ASCII chars</h3>
 
+<style>
+ul {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin: auto 0;
+}
 
+li {
+	margin: 1rem auto;
+	padding: 1rem;
+	border: 1px dashed green;
+	list-style-type: none;
+	text-decoration: none;
+	min-width: 20rem;
+	width: 30%;
+	min-height: 40rem;
+	height: 25%;
+	
+}
+
+a {
+	color: powerblue;
+	background: tomato;
+	font-family: "Helvetica, Arial, sans-serif";
+}
+</style>
 
 <script>
 	const update = document.getElementById("update").innerText = "Timestamp needed..";
@@ -10006,7 +10201,7 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	const source = document.querySelectorAll("pre");
 	const code = document.querySelectorAll("code");
 	const note = document.querySelectorAll("#note");
-	
+		
 	<!-- function addLineNumbers (code) { -->
 		<!-- let lines = code.innerHTML.split("\n"); -->
 		<!-- while (code.childNode.length > 0) { -->
@@ -10085,6 +10280,14 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 			item.style.color = "darkslateblue";
 		});
 	}
+	<!-- Should be renamed first_occuranse and been used to mark words with a class (p0, highlight, first-time) in i-tags -->
+	<!-- function italic_styling (i) { -->
+		<!-- italic.forEach(el => { -->
+			<!-- el.style.backgroundColor = "tomato"; -->
+			<!-- el.style.fontFamily = "sans-serif"; -->
+			<!-- el.style.fontWeight = "700"; -->
+		<!-- }); -->
+	<!-- } -->
 	function show_images (img) {
 		let count = 0;
 		img.forEach(image => {
@@ -10154,6 +10357,7 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	
 	show_index(index);
 	details_styling(summary);
+	<!-- italic_styling(italic); -->
 	show_images(images);
 	sourcecode(source);
 	show_notes(note);
