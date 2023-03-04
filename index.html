@@ -914,7 +914,9 @@ case WM_SYSKEYDOWN:
 <p id="note"><b>NOTE:</b> The above code gives a <i>Windows Default Sound</i> when switching in and out of fullscreen using the key command <b>alt+enter</b>, so as an exercise try to implement the resizing in <b>WM_SYSCHAR</b>, or use an <b>Keyboard Accelerator</b>.</p>
 <p>Keyboard Accelerator sends their result to <b>WM_COMMAND</b> or <b>WM_SYSCOMMAND</b>, so see if any of those fixes the bug. (Both are wrong, WM_COMMAND is for IDOK or IDD_MENUITEMS, and WM_SYSCOMMAND handles SC_SCREENSAVER and SC_MONITORPOWER)</p>
 <p>The (probably) correct solution is to use <b>WM_SYSKEYDOWN</b> since that is for system keys like F10 or ALT. Test with InitCommonControlsEx and adding Bits 29 in WM_SYSKEYDOWN to see if that solves it!</p>
-
+<p id="note">
+	Mention <b>AdjustWindowRect()</b> and how this prevents correct scaling in windowed mode...
+</p>
 
 
 
@@ -2090,10 +2092,6 @@ void toggle_fullscreen(void)
 }
 </code></pre>
 </details>
-
-<p id="note">
-	AdjustWindowRect() and how this prevents wrongful scaling in windowed mode...
-</p>
 
 <p id="note">
 	The Transformation Pipeline<br/>
