@@ -51,7 +51,7 @@
 	<li><a href="#revisiting-fixed-functional-pipeline">LESSON 42 - Revisiting the Fixed Funtional Pipeline</a></li>
 	<li><a href="#programmable-pipeline-pt1">LESSON 43 - Programmable pipelines pt. 1</a></li>
 	<li><a href="#programmable-pipeline-pt2">LESSON 44 - Programmable pipelines pt. 2</a></li>
-	<li></li>
+	<li><a href="#programmable-pipeline-pt3">LESSON 45 - Programmable pipelines pt. 3</a></li>
 	<li></li>
 	<li></li>
 	<li></li>
@@ -2090,6 +2090,10 @@ void toggle_fullscreen(void)
 }
 </code></pre>
 </details>
+
+<p id="note">
+	AdjustWindowRect() and how this prevents wrongful scaling in windowed mode...
+</p>
 
 <p id="note">
 	The Transformation Pipeline<br/>
@@ -8131,31 +8135,77 @@ Viewport clipping
 
 
 
-<h1><a name="">LESSON 45 - </a></h1>
+<h1><a name="programmable-pipeline-pt3">LESSON 45 - Programmable pipeline pt. 3</a></h1>
 <h3>Introduction</h3>
-<p></p>
+<p>Shaders are: GLSL is a C-based programming language to handle vertices and transfer it into the pipeline.</p>
+
+<p>The viewing matrix is considered the view projection. Two types - orthographic and projection</p>
+
+<p>Vertex shader returns the clip space (keyword is gl_Position, available even to the Fragment shaders)...</p>
+
+<p>Post Vertex Stage: primitive assembly - viewport clipping(discarding object outside of the viewporr)</p>
+
+<p>Perspective divide (homogenous coordinate (adds the w) &rarr; cartesian coordinate).</p>
+
+<p>Face Culling (Hints of- or remove "hidden" sides). It's an optimisation in the renderer.</p>
+
+<p>Rasterizer: Creates a potential pixel. The "brain" or logic where all primitives are rendered.</p>
+
+<p>Fragment Shader Stage: whatever pixels are in the Fragment shader is colored by this stage.</p>
+
+<p>Vertex Shader: runs once pr vertex, Fragment Shader: runs once pr fragment</p>
+
+<p>Main job for Fragment Shader is to color each pixel.</p>
+
+<p>Two optional shaders: Geometry shader and Tesselation shader.</p>
+
+<p>Geometry Shader (creates multiple objects out of a single object).</p>
+
+<p>Tesselation Shader: (add or increase details to a object (stiching...))</p>
 
 <pre><code>
+PER FRAGMENT STAGE (PER SAMPLE PROCESSING)
 
+1) 	SCISSOR TEST
+	+---------------------------+
+	|  +--+	 	  .				|
+	|  +--+       /\			|
+	+---------------------------+
+	
+	Inside a viewport you can cull out an object if needed.
+2)  DEPTH TEST (happens inside the pipeline)
+
+	Testing the z-values on fragments
+
+3)	PIXEL OWNERSHIP TEST
+
+	If a pixel is hidden by a window the Pixel Ownership Test will fail this stage
+	
+4) 	BLENDING TEST 
+	
+	Alpha blending is handled in the pipeline (front object is transparemt- objects behind should be visible)
+
+5) 	LOGICAL OPERATIONS
+	
+	All the bitwise operations are handled by the pipeline
+	
+6) 	DITHERING  TEST (WRITE MASK)
+
+	Image processing algorithm to intenionally apply noise (handled by OpenGL internatlly.
+	
+7) 	STENCIL TEST
+
+	We'll get back to this stage (advanced ...)
 </code></pre>
 
-<p></p>
-
-<pre><code>
-
-</code></pre>
-
-<p></p>
-
-<pre><code>
-
-</code></pre>
+<p>If a pixel returns from all these stages it is added to the Framebuffer. The content of the framebuffer is displayed to the screen.</p>
 
 
 
 
 
-<h1><a name="">LESSON 46 - </a></h1>
+
+<h1><a name="">LESSON 46 - Setting up a modern OpenGL context</a></h1>
 <h3>Introduction</h3>
 <p></p>
 
@@ -8202,7 +8252,7 @@ Viewport clipping
 
 
 <details>
-<summary>Code example</summary>
+<summary>Appendix and Notes</summary>
 <h1><a name="">KNOWN BUGS</a></h1>
 <ul>
 	<li>Something adds a transparent layer to <b>GL_LINE_STRIP</b> when drawn</li>
@@ -8659,11 +8709,11 @@ glewInit();
 	<li>Realtime ray tracing in games: <a href="https://www.intel.com/content/www/us/en/developer/articles/guide/real-time-ray-tracing-in-games.html" target="_blank">https://www.intel.com/content/www/us/en/developer/articles/guide/real-time-ray-tracing-in-games.html</a></li>
 	<li>Windows Alternate Data Stream (hacking): <a href="https://www.bleepingcomputer.com/tutorials/windows-alternate-data-streams/" target="_blank">https://www.bleepingcomputer.com/tutorials/windows-alternate-data-streams/</a></li>
 	<li>Pixel perfect collition detection in C: <a href="https://www.reddit.com/r/C_Programming/comments/108idah/pixel_perfect_collision_detection_in_c/" target="_blank">https://www.reddit.com/r/C_Programming/comments/108idah/pixel_perfect_collision_detection_in_c/</a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
+	<li>Lerp explained video: <a href="https://www.reddit.com/r/gamedev/comments/10yz4l1/did_a_video_exploring_lerp_in_detail_how_to_get/" target="_blank">https://www.reddit.com/r/gamedev/comments/10yz4l1/did_a_video_exploring_lerp_in_detail_how_to_get/</a></li>
+	<li>Terrain generation breakdown: <a href="https://kbrecordzz.com/2023/02/23/terrain/" target="_blank">https://kbrecordzz.com/2023/02/23/terrain/</a></li>
+	<li>Texture blending techniques writeup: <a href="https://kbrecordzz.com/2022/12/17/banjokazooie/" target="_blank">https://kbrecordzz.com/2022/12/17/banjokazooie/</a></li>
+	<li>Minimal Cross Platform Graphics library (nice Win32 keyboard demo)<a href="https://zserge.com/posts/fenster/" target="_blank">https://zserge.com/posts/fenster/</a></li>
+	<li>libnativedialog: <a href="https://github.com/AndroGR/nvdialog" target="_blank">https://github.com/AndroGR/nvdialog</a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
