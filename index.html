@@ -2104,6 +2104,9 @@ void toggle_fullscreen(void)
 	<a href="https://openglbook.com/chapter-4-entering-the-third-dimension.html" target="_blank">https://openglbook.com/chapter-4-entering-the-third-dimension.html</a>
 </p>
 
+<p id="note">
+Direct State Access for OpenGL 2.1: <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_direct_state_access.txt">https://registry.khronos.org/OpenGL/extensions/EXT/EXT_direct_state_access.txt</a>
+</p>
 
 
 <h1><a name="identity-matrix">LESSON 16 - glLoadIdentity</a></h1>
@@ -8325,6 +8328,33 @@ S(u, v) = n sigma i = 0, m sigma j = 0, B SupN SubI (u) B Supm Subj (v) P Subi S
 
 <p id="note">Please see OpenGL Programming Guide 7th Ed. p 578 for further details</p>
 
+<pre><code>
+Fermat's Library
+The fifth hyperfactorial: 5sub5 × 4sub4 × 3³ × 2² × 1¹ = 86400000 milliseconds is exactly 1 day
+
+1 day has 24 hours: 24=4·3·2
+1 hour has 60 minutes: 60=5·4·3
+1 minute has 60 seconds: 60=5·4·3
+1 second has 1000 milliseconds: 1000=5·5·5·4·2
+</code></pre>
+
+<pre><code>
+Source: https://www.reddit.com/r/GraphicsProgramming/comments/yibs49/math_struggle_with_dot_products_vector_algebra/
+I'm currently working through the ray tracing in one weekend books and while I've now got a pretty good grasp on everything in here, I'm really hung not being able to understand a bit of math surrounding this:
+(A + tb − C) ⋅ (A + tb − C) = r^2
+The rules of vector algebra are all that we would want here. If we expand that equation and move all the terms to the left hand side we get:
+t^2 b ⋅ b + 2tb ⋅ (A−C) + (A−C) ⋅ (A−C) − r^2 = 0
+Anyone able to help explain how the author has made this jump using vector algebra? Thanks.
+---
+(A + tb − C) ⋅ (A + tb − C) = r2
+(tb + (A − C)) ⋅ (tb + (A − C)) - r2 = 0
+t2 b · b + tb · (A - C) + (A - C) · tb + (A - C) ⋅ (A - C) - r2 = 0
+t2 b · b + 2 tb · (A - C) + (A - C) · (A - C) - r2 = 0
+Just using the associative property of vector addition and the commutative property of the dot product.
+---
+Dot products distribute like multiplication (you can prove it to yourself if you write out the x, y, z components). 
+If you rewrite A-C as X, and tb as Y. Then you have your typical (X+Y)2 form = X2 + 2XY + Y2. Where scalar multiplication is replaced with a vector dot product.
+</code></pre>
 <pre><code>
 Read more about: 
 - Bernstein polynomial, Bézier Curves and Surfaces
