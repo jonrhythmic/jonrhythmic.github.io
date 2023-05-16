@@ -52,7 +52,7 @@
 	<li><a href="#programmable-pipeline-pt1">LESSON 43 - Programmable pipelines pt. 1</a></li>
 	<li><a href="#programmable-pipeline-pt2">LESSON 44 - Programmable pipelines pt. 2</a></li>
 	<li><a href="#programmable-pipeline-pt3">LESSON 45 - Programmable pipelines pt. 3</a></li>
-	<li></li>
+	<li><a href="#modern-opengl-context">LESSON 46 - Setting up a modern OpenGL context</a></li>
 	<li></li>
 	<li></li>
 	<li></li>
@@ -263,7 +263,7 @@ float vertices[] = {
 	-0.5, 	 0.5, 	0.0, 	// 1st - 0		0 +-------+ 3
 	-0.5,	-0.5,	0.0, 	// 2nd - 1		  |	  |
 	 0.5, 	-0.5, 	0.0, 	// 3rd - 2		  |	  | <-- Covers half the screen
-	 0.5, 	-0.5, 	0.0 	// 4th - 3		1 +-------+ 2
+	 0.5, 	 0.5, 	0.0 	// 4th - 3		1 +-------+ 2
 };
 </code></pre>
 
@@ -1160,6 +1160,12 @@ glutKeyboardFunc(keyboard);			// Similar to WM_KEYDOWN
 glutMouseFunc(mouse);				// ...
 glutMainLoop();					// Handles the main game loop 
 </code></pre>
+
+<p id="note">This writeup implements a modern OpenGL context adding more to <b>HMONITOR</b> and further improving <b>#pragma</b> and <b>_DEBUG</b> flag: 
+<a href="https://subscription.packtpub.com/book/business-and-other/9781800208087/1/ch01lvl1sec04/creating-the-application-class">https://subscription.packtpub.com/book/business-and-other/9781800208087/1/ch01lvl1sec04/creating-the-application-class</a>
+<a href="https://subscription.packtpub.com/book/business-and-other/9781800208087/1/ch01lvl1sec07/creating-a-window">https://subscription.packtpub.com/book/business-and-other/9781800208087/1/ch01lvl1sec07/creating-a-window</a>
+<a href="https://github.com/PacktPublishing/Hands-On-Game-Animation-Programming/blob/master/AllChapters/Code/WinMain.cpp">https://github.com/PacktPublishing/Hands-On-Game-Animation-Programming/blob/master/AllChapters/Code/WinMain.cpp</a>
+</p>
 
 <p>Here is the cleaned up sourcecode of a win32 application running OpenGL:</p>
 
@@ -8206,25 +8212,297 @@ PER FRAGMENT STAGE (PER SAMPLE PROCESSING)
 
 
 
-<h1><a name="">LESSON 46 - Setting up a modern OpenGL context</a></h1>
+<h1><a name="modern-opengl-context">LESSON 46 - Setting up a modern OpenGL context pt. 1</a></h1>
 <h3>Introduction</h3>
-<p></p>
+<p>To initialize a modern OpenGL context you need glew.h (GL Extension Wrangler Lib). It's open platform and released by the Khronos Foundation.</p>
+
+<p>First we have to download the library (https://glew.sourceforge.net/)</p>
+
+<p>Add the include and lib folder in setup (TODO) and copy the DLL into the folder... #include <glew.h> before gl.h</p>
 
 <pre><code>
 
 </code></pre>
 
-<p></p>
+<p>There are two types of pipelines, rasterization &rarr; DEFine: you pass a set of vertices, then processed by the rasterizer and put into the framebuffer.</p>
 
+<p>Rasterization is the journey from the fragment to the final pixel! You need vertices to render...</p>
+
+<p>You define some vertices, which will be rasterized and render to screen.</p>
+
+<p>the second thing OpenGL support is called global illumination (volumetric rendering). Here you don't have any vertices, (ray-tracing, ray-marching, path-tracing) &rarr; it has it's another way to render (no vertices), but can render multiple thing.</p>
+
+<p>modern pipeline supports both types (first rasterization pipeline works).</p>
+
+<details>
+<summary>Code example</summary>
 <pre><code>
+#include &lt;windows.h&gt;
+// LESSON 46
+#include &lt;GL/glew.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#pragma comment(lib, "opengl32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
 
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+	
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	SetWindowTextA(g_hwnd, glGetString(GL_VERSION));
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
 </code></pre>
-
-<p></p>
-
-<pre><code>
-
-</code></pre>
+</details>
 
 <p id="note">
 https://github.com/alberto-paparella/SimpleFirstPersonGame/tree/main/src
@@ -8233,25 +8511,436 @@ https://github.com/alberto-paparella/SimpleFirstPersonGame/tree/main/src
 
 
 
-<h1><a name="">LESSON 47 - </a></h1>
+<h1><a name="">LESSON 47 - Setting up a modern OpenGL context pt. 2</a></h1>
 <h3>Introduction</h3>
-<p></p>
+<p>Everything in OpenGL previous lessons we used the legacy pipeline. To get a modern extensions that comes with the modern pipeline, we use glew and get the EXT for modern context.</p>
 
+<p>We don't have to change the rendering context, because we use the OS calls, so all we need is the modern funtions that comes with OGL. (New extensions)</p>
+
+<p>Khronos maintains OpenGL for the desktop, for android it's called OpenGL ES (Embedded systems). The latests version is OpenGL ES3.2</p>
+
+<p>In the browser it's called WebGL, which is OpenGL ES internally. WebGL2 is locked to OGL ES 3.0. When OpenGL ES 3.1 (same as OGL 4.2) was released it came with the tesselation shader.</p>
+
+<p>When OpenGL ES 3.2 was released it introduced the geometry shader was introduced.</p>
+
+<p>WebGL only supports vert and frag, but not tess and geo shaders.</p>
+
+<p>OpenGL has three versions, OGL, OGL ES and WebGL for desktop, mobile and browser.</p>
+
+<p>OpenGL was supported for Mac until 18 (19?), but it was swapped for their own technology to support Metal, but it's availble up to version 4.1 CHECK IT OUT (with warning).</p>
+
+<p>All of these OpenGL version uses the shader language GLSL (Graphic Language Shader Language).</p>
+
+<p>There are two types of shader, one is outside of the program and one is inside. Industry standard is outside the program, while for home use inside the program will work just fine.</p>
+
+<p>A shader is a (small C-)program that runs on the GPU. Every shader has it's own spesific task to do. Each shader perferms it's own task. Vert = pr vertex. if you send in 10k vert the vert shader will run 10k times. </p>
+
+<p>What we seing on the screen is from the rasterization pipeline (creation of meshes to screen).</p>
+
+<p>You pass data to the shader which processes it and passes it into the next stage of the pipeline.</p>
+
+<p>You pass the data from one shader to the next using the <b>in</b> keyword.</p>
+
+<p>Every shader also has it's own return type. The type depends on what the shader does</p>
+
+<p>Every shader will it's own <b>main()</b>, similar to the applications main-function.|</p>
+
+<p>You pass some data to the shader, it will process it and pass it back into the pipeline.</p>
+
+<h3>Vertex shader</h3>
 <pre><code>
+// important in any shader (version has to match between each shader that's defined)
+version core 460
+in vec3 position;
 
+void main()
+{
+	// some computation related to position
+	gl_Position = // someCalculations
+}
+
+Not no return-keyword, gl_Position is handling that for us.
 </code></pre>
 
-<p></p>
-
+<h3>Fragment shader</h3>
 <pre><code>
+version core 460
+in vec3 color;
+out vec3 out_color,
 
+void main()
+{
+	// color = vec(1.0f, 1.0f, 1.0f);
+	out_color = color;
+}
 </code></pre>
 
-<p></p>
+<p>Frag shader used to have a keyword for frag color, but it's deprecated.</p>
+
+<p>These shaders are compiled at runtime, so it's compiled when the appllication is put in a RAM. We'll write our own Shader debugger to handle this (shaders are difficult to debug).</p>
+
+
+
+
+
+
+<h1><a name="">LESSON 48 - Setting up a modern OpenGL context pt. 3 (shaders)</a></h1>
+<h3>Introduction</h3>
+<p>There are two types of content in a shader, first one is attr, second is uniforms. Attributes are fixed once it's passed to the shaders. Uniforms can be updated dynimically without any changes.</p>
+
+<p>Both have spesific usecases: attr can be verts, normals, tex coords. These are only sent once to the shader.</p>
+
+<p>Uniforms can be any data, ex if you want change your color you pass a var as uniform. These are sent every frame.</p>
+
+<p>Shader is a program that runs on the GPU. Every shader has it's work spesified. GLSL is a C like language with it's own keywords. GLSL is the shader language.</p>
+
+<p>Inside the shader you have the attr (verts, norms, texcoords) and the uniforms (anything). </p>
+
+<p>Setting up a modern OpenGL program by adding a shader program object in the global space and adding the following into your <b>initialize()</b> funtion:</p>
 
 <pre><code>
+...
+GLuint shader_program_obj;
+...
 
+bool initialize()
+{
+	...
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450" \
+		"\n" \
+		"void main()" \
+		"{" \
+		"" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+	const GLchar* fragment_shader = "#version 450" \
+		"\n" \
+		"void main()" \
+		"{" \
+		"" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	glLinkProgram(shader_program_obj);
+	...
+}
 </code></pre>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+#include <windows.h>
+// LESSON 46
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <stdio.h>
+#include <stdbool.h>
+#pragma comment(lib, "opengl32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+// LESSON 48
+GLuint shader_program_obj;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-SDK");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+	
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	SetWindowTextA(g_hwnd, glGetString(GL_VERSION));
+
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450" \
+		"\n" \
+		"void main()" \
+		"{" \
+		"" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+	const GLchar* fragment_shader = "#version 450" \
+		"\n" \
+		"void main()" \
+		"{" \
+		"" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	glLinkProgram(shader_program_obj);
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+</details>
 
 
 
@@ -8758,11 +9447,11 @@ glewInit();
 	<li>Why we use const as members of a function thread: <a href="https://www.reddit.com/r/C_Programming/comments/uz6o2s/why_we_use_const_as_a_member_of_a_function/" target="_blank">https://www.reddit.com/r/C_Programming/comments/uz6o2s/why_we_use_const_as_a_member_of_a_function/</a></li>
 	<li>How to make ps1 graphics: <a href="https://www.reddit.com/r/gamedev/comments/11nkoiw/how_to_make_ps1_graphics_in_4_minutes/" target="_blank">https://www.reddit.com/r/gamedev/comments/11nkoiw/how_to_make_ps1_graphics_in_4_minutes/</a></li>
 	<li>Architectual Patterns for editors thread: <a href="https://www.reddit.com/r/gameenginedevs/comments/11ofki4/what_are_some_architectural_patterns_for_creating/" target="_blank">https://www.reddit.com/r/gameenginedevs/comments/11ofki4/what_are_some_architectural_patterns_for_creating/</a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
+	<li>Writing a garbage collector in C: <a href="https://maplant.com/gc.html" target="_blank">https://maplant.com/gc.html</a></li>
+	<li>Making a 3rd person camera: <a href="https://radcade.com/game-engine-agnostic-third-person-camera/" target="_blank">https://radcade.com/game-engine-agnostic-third-person-camera/</a></li>
+	<li>Subspace Culling for Ray-Box intersection: <a href="https://gpuopen.com/download/publications/I3D2023_SubspaceCulling_updated.pdf" target="_blank">https://gpuopen.com/download/publications/I3D2023_SubspaceCulling_updated.pdf</a></li>
+	<li>Win32 examples (including mouse): <a href="https://www.opengl.org/archives/resources/code/samples/win32_tutorial/" target="_blank">https://www.opengl.org/archives/resources/code/samples/win32_tutorial/</a></li>
+	<li>Fast Fluid Simulation on the GPU: <a href="https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu" target="_blank">https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu</a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
