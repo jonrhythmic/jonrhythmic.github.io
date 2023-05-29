@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head lang="en">
-	<base target="_blank" rel="noopener">
+	<base target="_top" rel="noopener noreferrer nofollow">
 </head>
 
 <h1>OpenGL C programming tutorial (Win32 API)</h1>
@@ -8945,6 +8945,28 @@ void toggle_fullscreen(void)
 
 
 
+<h1><a name="modern-opengl-context-pt4">LESSON 49 - </a></h1>
+<h3>Introduction</h3>
+<p></p>
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+
+</code></pre>
+</details>
+
+
+
 <details>
 <summary>Appendix and Notes</summary>
 <h1><a name="">KNOWN BUGS</a></h1>
@@ -9452,8 +9474,8 @@ glewInit();
 	<li>Subspace Culling for Ray-Box intersection: <a href="https://gpuopen.com/download/publications/I3D2023_SubspaceCulling_updated.pdf" target="_blank">https://gpuopen.com/download/publications/I3D2023_SubspaceCulling_updated.pdf</a></li>
 	<li>Win32 examples (including mouse): <a href="https://www.opengl.org/archives/resources/code/samples/win32_tutorial/" target="_blank">https://www.opengl.org/archives/resources/code/samples/win32_tutorial/</a></li>
 	<li>Fast Fluid Simulation on the GPU: <a href="https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu" target="_blank">https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu</a></li>
-	<li><a href="" target="_blank"></a></li>
-	<li><a href="" target="_blank"></a></li>
+	<li>Awesome win32 window tutorial: <a href="https://www.codementor.io/@malortie/build-win32-api-app-windows-messages-c-cpp-visual-studio-du107sbya" target="_blank">https://www.codementor.io/@malortie/build-win32-api-app-windows-messages-c-cpp-visual-studio-du107sbya</a></li>
+	<li>Awesome win32 resource tutorial: <a href="https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4" target="_blank"></a>https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4</li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
@@ -9538,6 +9560,41 @@ struct point makepoint(int, int);
 screen.pt1 = makepoint(0, 0);
 screen.pt2 = makepoint(XMAX, YMAX);
 middle = makepoint((screen.pt1.x + screen.pt2.y) / 2, (screen.pt1.y + screen.pt2.y) / 2);
+</code></pre>
+
+<pre><code>
+Best way to calculate normals of a changing mesh? CeruleanBoolean141
+Hello again! I am working on a GPGPU project to simulate hydraulic erosion over some terrain. The map I start with has normals, but when the erosion changes the shape of the terrain mesh, I need these normals to update.
+The only thing I can think to do is use a geometry shader to recalculate the normals (either every frame or every N frames). My question is: is a geometry shader the way to go, or is there a better solution?
+Thanks to anyone who takes the time to read this.
+
+If you're happy with the flat shaded look you can use the derivative functions to calculate a normal.
+
+vec3 X = dFdx ( vertexPosition );
+vec3 Y = dFdy ( vertexPosition );
+vec3 normal = normalize ( cross ( X, Y ) );
+
+Smooth normals are also possible using this technique but it involves multiple passes. Here's(*) an example implementation of that in Cinder.
+* = Vertex displacement mapping is a technique where a texture or a procedural function is used to dynamically change the position of vertices in a mesh. It is often used to create a terrain with mountains from a height field, ocean waves or an animated flag.
+
+For dynamically changing height fields, like an animated flag, not only the vertex position should change, but also its associated normal vector. One way to calculate the new normal would be to use a geometry shader. This is often called per-face normal computation on the GPU, because it can only calculate one normal vector for the whole triangle. The result looks faceted: each triangle will appear to be flat.
+
+To overcome this, you can use a normal map. This is an additional texture that corresponds to the height field and contains offsets to the original surface normals. A shader can then fetch the normal from this texture on a per pixel basis. The great news is that normals are even automatically interpolated, so per-pixel shading will look incredibly smooth.
+
+You should calculate a new normal map every time your height field (a.k.a. displacement map) changes. This can easily be done on the GPU. Using floating point textures, this is even easier and can be done using a simple fragment shader.
+
+This sample will show you how to:
+
+    render to a floating point texture to create a displacement map on-the-fly
+    render the corresponding normal map, also a floating point texture
+    use both maps to render an animated, transparent piece of cloth that looks a lot like Sony PlayStation's XrossMediaBar background (but that's just a coincidence, don't you think? ;))
+
+All of this is done on the GPU, very little work remains for the CPU. The sample can therefor easily run at 300+ FPS. Note that you do need a modern GPU for this, with support for floating point textures and vertex shader texture fetch. If your GPU supports shader model 3, you're probably good to go.
+
+Source: https://github.com/paulhoux/Cinder-Samples/tree/master/SmoothDisplacementMapping
+
+Simulating Mesh shader in compute shader: https://tellusim.com/mesh-shader-emulation/
+</code></pre>
 </code></pre>
 
 <pre><code>
