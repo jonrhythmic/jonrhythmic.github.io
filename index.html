@@ -8947,7 +8947,7 @@ void toggle_fullscreen(void)
 
 <h1><a name="modern-opengl-context-pt4">LESSON 49 - </a></h1>
 <h3>Introduction</h3>
-<p></p>
+<p>include vmath, change main.c to main.cpp, </p>
 <p></p>
 
 <pre><code>
@@ -8961,7 +8961,360 @@ void toggle_fullscreen(void)
 <details>
 <summary>Code sample:</summary> 
 <pre><code>
+#include <windows.h>
+// LESSON 46
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "vmath.h"
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "openal32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+// using namespace vmath;
 
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+// LESSON 48
+GLuint shader_program_obj;
+
+// LESSON 49
+enum {
+	POSITION = 0,
+};
+GLuint vao_triangle;
+GLuint vbo_position_triangle;
+GLuint mvp_uniform;
+vmath::mat4 perspective_projection_matrix;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-OpenGL-App");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+	
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	// SetWindowTextA(g_hwnd, glGetString(GL_VERSION));
+
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	// LESSON 49 ()
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450 core" \
+		"\n" \
+		"in vec4 vpos;" \
+		"uniform mat4 mvp_matrix;" \
+		"void main()" \
+		"{" \
+		"	gl_Position = mvp_matrix * vpos;" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+
+	// LESSON 49 (core tells ogl to use the core (latest shader vers vs legacy))
+	// Emitting a blue color to whatever the vert has passed
+	const GLchar* fragment_shader = "#version 450 core" \
+		"\n" \
+		"out vec4 fragColor;" \
+		"void main()" \
+		"{" \
+		"	fragColor = vec4(0.0, 0.0, 1.0, 1.0);" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	// LESSON 49
+	glBindAttribLocation(shader_program_obj, POSITION, "vpos");
+
+	glLinkProgram(shader_program_obj);
+
+	// LESSON 49
+	mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+
+	// LESSON 49
+	const GLfloat triangleVertices[] =
+	{
+		// Perspective triangle (Front face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f,  1.0f,     // Right bottom
+		// Perspective triangle (Right face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f, -1.0f,     // Right bottom
+		// Perspective triangle (Back face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f, -1.0f,     // Left bottom
+	   -1.0f, -1.0f, -1.0f,		// Right bottom
+		// Perspective triangle (Left face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f, -1.0f,		// Left bottom
+	   -1.0f, -1.0f,  1.0f
+	};
+
+	glGenVertexArrays(1, &vao_triangle);
+	glBindVertexArray(vao_triangle);
+	glGenBuffers(1, &vbo_position_triangle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(POSITION);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	// LESSON 49
+	perspective_projection_matrix = vmath::perspective(45.0f, (GLfloat)w / (GLfloat)h, 1.0f, 100.0f );
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// LESSON 49
+	glUseProgram(shader_program_obj);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
 </code></pre>
 </details>
 
@@ -9966,6 +10319,18 @@ you could typedef an enum or a function as well.
 typedef enum { E } enum_type;
 typedef int fun_type(int);
 </code></pre>
+
+<pre><code>
+Did you know that in Blender you can easily animate oscillating objects with a single driver expression? ✨
+
+1. Select your object
+2. In its rotation write:
+"# sin(frame / 300 * pi * 2 * 3) * 0.5"
+where 3 is the number of swings it does, and 0.5 is the amplitude multiplier (use a bigger number for bigger swings), and 300 is your end frame
+3. Enjoy the perfect loop!
+Source: <a href="https://twitter.com/passivestar_/status/1665634739288518661">https://twitter.com/passivestar_/status/1665634739288518661</a>
+</code></pre>
+
 <h1><a name="">Pro tips</a></h1>
 <ul>
 	<li>
@@ -11121,6 +11486,455 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	TL;DR - Plan each week, review it at the end, and improve the next week with lessons from the last.
 	</code></pre>
 	</li>
+	
+	<pre><code>
+	<h3>Installing and setting up OpenAL with HRTF</h3>
+	Download OpenAL Soft <a href="https://openal-soft.org/" rel="_blank nofollow noreferrer">https://openal-soft.org/</a> and unzip it to C:\libraries\
+	
+	If you have 64-bit Windows:
+		Copy soft_oal.dll from the Win32 folder into C:\Windows\SysWOW64
+		Copy soft_oal.dll from the Win64 folder into C:\Windows\System32
+	
+	If you have 32-bit Windows:
+		Copy soft_oal.dll from the Win32 folder into C:\Windows\System32
+		
+	<h3>Enable HRTFs in OpenAL Soft</h3>
+	We need to create a configuration file that will tell OpenAL Soft to use HRTFs.
+
+    Open Notepad
+    Type the following:
+		<pre>hrtf = true</pre>
+    Click the <b>File menu</b> and <b>Save As...</b>
+    Type <b>%APPDATA%</b> and hit enter. It will automatically take you to the folder where we need to save this configuration file.
+    Change the <b>Save as</b> type drop-down list to say <b>All files (*.*)</b>
+    Type the File name as <b>"alsoft.ini"</b> and click <b>Save</b>.
+	
+	<pre><code>
+	<h3>Example using OpenAL with customer audio loading library in C++</h3>
+	#include <stdio.h>
+	#include <AL\al.h>
+	#include <AL\alc.h>
+
+	struct RIFF_Header {
+		char chunkID[4];
+		long chunkSize;
+		char format[4];
+	};
+
+	struct WAVE_Format {
+		char subChunkID[4];
+		long subChunkSize;
+		short audioFormat;
+		short numChannels;
+		long sampleRate;
+		long byteRate;
+		short blockAlign;
+		short bitsPerSample;
+	};
+
+	struct WAVE_Data {
+		char subChunkID[4];
+		long subChunk2Size;
+	};
+
+	bool loadWavFile(const char* filename, ALuint* buffer,
+					 ALsizei* size, ALsizei* frequency,
+					 ALenum* format) {
+	  FILE* soundFile = NULL;
+	  WAVE_Format wave_format;
+	  RIFF_Header riff_header;
+	  WAVE_Data wave_data;
+	  unsigned char* data;
+
+	  try {
+		soundFile = fopen(filename, "rb");
+		if (!soundFile)
+		  throw (filename);
+
+		fread(&riff_header, sizeof(RIFF_Header), 1, soundFile);
+
+		if ((riff_header.chunkID[0] != 'R' ||
+			 riff_header.chunkID[1] != 'I' ||
+			 riff_header.chunkID[2] != 'F' ||
+			 riff_header.chunkID[3] != 'F') &&
+			(riff_header.format[0] != 'W' ||
+			 riff_header.format[1] != 'A' ||
+			 riff_header.format[2] != 'V' ||
+			 riff_header.format[3] != 'E'))
+				 throw ("Invalid RIFF or WAVE Header");
+
+		fread(&wave_format, sizeof(WAVE_Format), 1, soundFile);
+
+		if (wave_format.subChunkID[0] != 'f' ||
+			wave_format.subChunkID[1] != 'm' ||
+			wave_format.subChunkID[2] != 't' ||
+			wave_format.subChunkID[3] != ' ')
+				 throw ("Invalid Wave Format");
+
+		if (wave_format.subChunkSize > 16)
+			fseek(soundFile, sizeof(short), SEEK_CUR);
+
+		fread(&wave_data, sizeof(WAVE_Data), 1, soundFile);
+
+		if (wave_data.subChunkID[0] != 'd' ||
+			wave_data.subChunkID[1] != 'a' ||
+			wave_data.subChunkID[2] != 't' ||
+			wave_data.subChunkID[3] != 'a')
+				 throw ("Invalid data header");
+
+		data = new unsigned char[wave_data.subChunk2Size];
+
+		if (!fread(data, wave_data.subChunk2Size, 1, soundFile))
+			throw ("error loading WAVE data into struct!");
+
+		*size = wave_data.subChunk2Size;
+		*frequency = wave_format.sampleRate;
+
+		if (wave_format.numChannels == 1) {
+			if (wave_format.bitsPerSample == 8 )
+				*format = AL_FORMAT_MONO8;
+			else if (wave_format.bitsPerSample == 16)
+				*format = AL_FORMAT_MONO16;
+		} else if (wave_format.numChannels == 2) {
+			if (wave_format.bitsPerSample == 8 )
+				*format = AL_FORMAT_STEREO8;
+			else if (wave_format.bitsPerSample == 16)
+				*format = AL_FORMAT_STEREO16;
+		}
+
+		alGenBuffers(1, buffer);
+		alBufferData(*buffer, *format, (void*)data,
+					 *size, *frequency);
+		fclose(soundFile);
+		return true;
+	  } catch(char* error) {
+		if (soundFile != NULL)
+			fclose(soundFile);
+		return false;
+	  }
+	}
+
+	int main(){
+
+		//Sound play data
+		ALint state;                            // The state of the sound source
+		ALuint bufferID;                        // The OpenAL sound buffer ID
+		ALuint sourceID;                        // The OpenAL sound source
+		ALenum format;                          // The sound data format
+		ALsizei freq;                           // The frequency of the sound data
+		ALsizei size;                           // Data size
+
+		// Checking for error before alcMakeContextCurrent can cause a crash to happen...
+		ALCdevice* device = alcOpenDevice(NULL);
+		// You could still check whether the device was opened successfully using if( !device )
+		ALCcontext* context = alcCreateContext(device, NULL);
+		alcMakeContextCurrent(context);
+
+		// Create sound buffer and source
+		alGenBuffers(1, &bufferID);
+		alGenSources(1, &sourceID);
+
+		// Set the source and listener to the same location
+		alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
+		alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
+
+		loadWavFile("..\\wavdata\\YOURWAVHERE.wav", &bufferID, &size, &freq, &format);
+
+		alSourcei(sourceID, AL_BUFFER, bufferID);
+
+		alSourcePlay(sourceID);
+
+		do{
+			alGetSourcei(sourceID, AL_SOURCE_STATE, &state);
+		} while (state != AL_STOPPED);
+
+
+		alDeleteBuffers(1, &bufferID);
+		alDeleteSources(1, &sourceID);
+		alcDestroyContext(context);
+		alcCloseDevice(device);
+
+		return 0;
+	}
+	</code></pre>
+	
+	I want to be able to run this application significantly faster than real-time. At the same time, the sound must be saved for later postprocessing. Is there a way to access the OpenAL output programmatically (virtually) without ever 
+	playing the sound on the real playback device?
+
+	Ideally, I'd like to have access that would be played during every tick of the main loop of my application. Normally one tick corresponds to one rendered frame (e.g. 1/30th of a second). But in this case we would be running the app 
+	as fast as possible.
+
+	We ended up using OpenAL Soft to do this. Example:
+
+
+	#include "alext.h"
+	LPALCLOOPBACKOPENDEVICESOFT alcLoopbackOpenDeviceSOFT;
+	alcLoopbackOpenDeviceSOFT = alcGetProcAddress(NULL,"alcLoopbackOpenDeviceSOFT");
+
+	replace your default device with this device
+
+	ALCcontext *context = alcCreateContext(device, attrs);
+
+	Set the attrs as you would for your default device
+
+	Then in the main loop use:
+
+	LPALCRENDERSAMPLESSOFT alcRenderSamplesSOFT;
+	alcRenderSamplesSOFT = alcGetProcAddress(NULL, "alcRenderSamplesSOFT");
+	alcRenderSamplesSOFT(device, buffer, 1024);
+
+	Here the buffer will store 1024 samples. This code runs faster than real-time, therefore you can sample frames every tick
+	---
+	I'm creating a context with
+
+	alcCreateContext(device, NULL).
+
+	The problem is that ALC_STEREO_SOURCES is 3 by default, so my program freezes if I try to reproduce more than 3 stereo sounds.
+	How can I set ALC_STEREO_SOURCES to 32?
+	
+	You can specify context creation attributes by making an array of type ALCInt, containing ordered pairs of names and values.
+	So for example:
+	ALCInt myParams[3] = {ALC_STEREO_SOURCES, 32, 0};
+	alcCreateContex	t(myDevice, myParams);
+	---
+	<p id="note">
+		OpenAL applies attenuation only to mono sound.
+	</p>
+	---
+	
+
+	I am writing a dialogue system for my game engine in C++. In order to group dialogue together I am having different dialogue sections placed within one file, and one buffer. Therefore how do I tell OpenAL to play the buffer from a 
+	specific time (or sample it doesn't really matter to me) into the buffer. Thanks for any help in advance!
+
+	void PlayFromSpecifiedTime(ALfloat seconds) const
+	{
+		alSourcef(source, AL_SEC_OFFSET, seconds);
+		alSourcePlay(source);
+	}
+
+	Or, if you want to play from a certain sample from the buffer:
+
+	void PlayFromSpecifiedSample(ALint sample) const
+	{
+		alSourcei(source, AL_SAMPLE_OFFSET, sample);
+		alSourcePlay(source);
+	}
+
+	You can also add a check at the beginning to see if you're not trying to skip to a certain time (or sample) beyond the total amount from the buffer. If it does, you simply return; out of it. This assumes you know what you're doing.
+	---
+	I'm new using OpenAl library. I'm following the OpenAl programming guide but i can't find.
+
+	I have this code extracted from page 10 of the OpenAl programming guide but still have no sound. I use OSX Snow Leopard, i know OSX doesn't have ALUT defined.
+
+	#include <stdio.h>
+	#include <sys/types.h>
+	#include <sys/stat.h>
+	#include <unistd.h>
+	#include <stdlib.h>
+
+	#include <OpenAL/al.h>
+	#include <OpenAL/alc.h>
+
+	using namespace std;
+
+	#define NUM_BUFFERS 3
+	#define BUFFER_SIZE 4096
+
+	int main(int argc, char **argv)
+	{
+		ALCdevice *dev;
+		ALCcontext *ctx;
+		struct stat statbuf;
+
+		Aluint buffer[NUM_BUFFERS];
+		Aluint source[NUM_SOURCES];
+
+		ALsizei size, freq;
+		ALenum format;
+		ALvoid *data;
+
+		// Initialization 
+		dev = alcOpenDevice(NULL); // select the "preferred dev" 
+
+		if (dev) 
+		{ 
+			ctx = alcCreateContext(dev,NULL); 
+			alcMakeContextCurrent(ctx);  
+		} 
+		// Check for EAX 2.0 support 
+		// g_bEAX = alIsExtensionPresent("EAX2.0");
+
+		// Generate Buffers 
+		alGetError(); // clear error code 
+		alGenBuffers(NUM_BUFFERS, buffer); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+			DisplayALError("alGenBuffers :", error); 
+			return 1; 
+		} 
+		// Load test.wav 
+		loadWAVFile("sample.wav", &format, &data, &size, &freq, &loop); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+			DisplayALError("LoadWAVFile sample.wav : ", error); 
+			alDeleteBuffers(NUM_BUFFERS, buffer); 
+		 return 1; 
+		}
+
+		// Copy test.wav data into AL Buffer 0 
+		alBufferData(buffer[0], format, data, size, freq); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+		 DisplayALError("alBufferData buffer 0 : ", error); 
+		 alDeleteBuffers(NUM_BUFFERS, buffer); 
+		 return 1; 
+		} 
+
+		// Unload test.wav 
+		unloadWAV(format, data, size, freq); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+			DisplayALError("UnloadWAV : ", error); 
+			alDeleteBuffers(NUM_BUFFERS, buffer); 
+			return 1; 
+		} 
+		// Generate Sources 
+		alGenSources(1, source); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+			DisplayALError("alGenSources 1 : ", error); 
+			return 1; 
+		} 
+		// Attach buffer 0 to source
+		alSourcei(source[0], AL_BUFFER, buffer[0]); 
+		if ((error = alGetError()) != AL_NO_ERROR) 
+		{ 
+			DisplayALError("alSourcei AL_BUFFER 0 : ", error); 
+		} 
+
+		// Exit 
+		ctx = alcGetCurrentContext(); 
+		dev = alcGetContextsDevice(ctx); 
+		alcMakeContextCurrent(NULL); 
+		alcDestroyContext(ctx); 
+		alcCloseDevice(dev);
+
+		return 0;
+	}
+
+	What things I missed to make this code work ??? What i'm doing wrong ???
+
+	Any advice could help, thanks.
+
+	ANSWER: You are not calling alSourcePlay(source[0]) to start the playback.
+	
+	ANSWER: People should also keep in mind that alSourcePlay() will execute asynchronously. So if you immediately clean up your audio resources after it returns, you probably won't hear anything at all before the program immediately exits. 
+	---
+	include <AL/al.h>    // OpenAL header files
+	#include <AL/alc.h>
+
+	#include <list>
+
+	using std::list;
+
+	#define FREQ 22050   // Sample rate
+	#define CAP_SIZE 2048 // How much to capture at a time (affects latency)
+
+	int main(int argC,char* argV[])
+	{
+		list<ALuint> bufferQueue; // A quick and dirty queue of buffer objects
+
+		ALenum errorCode=0;
+		ALuint helloBuffer[16], helloSource[1];
+		ALCdevice* audioDevice = alcOpenDevice(NULL); // Request default audio device
+		errorCode = alcGetError(audioDevice);
+		ALCcontext* audioContext = alcCreateContext(audioDevice,NULL); // Create the audio context
+		alcMakeContextCurrent(audioContext);
+		errorCode = alcGetError(audioDevice);
+		// Request the default capture device with a half-second buffer
+		ALCdevice* inputDevice = alcCaptureOpenDevice(NULL,FREQ,AL_FORMAT_MONO16,FREQ/2);
+		errorCode = alcGetError(inputDevice);
+		alcCaptureStart(inputDevice); // Begin capturing
+		errorCode = alcGetError(inputDevice);
+
+		alGenBuffers(16,&helloBuffer[0]); // Create some buffer-objects
+		errorCode = alGetError();
+
+		// Queue our buffers onto an STL list
+		for (int ii=0;ii<16;++ii) {
+			bufferQueue.push_back(helloBuffer[ii]);
+		}
+
+	  alGenSources (1, &helloSource[0]); // Create a sound source
+		errorCode = alGetError();
+
+		short buffer[FREQ*2]; // A buffer to hold captured audio
+		ALCint samplesIn=0;  // How many samples are captured
+		ALint availBuffers=0; // Buffers to be recovered
+		ALuint myBuff; // The buffer we're using
+		ALuint buffHolder[16]; // An array to hold catch the unqueued buffers
+		bool done = false;
+		while (!done) { // Main loop
+			// Poll for recoverable buffers
+			alGetSourcei(helloSource[0],AL_BUFFERS_PROCESSED,&availBuffers);
+			if (availBuffers>0) {
+				alSourceUnqueueBuffers(helloSource[0],availBuffers,buffHolder);
+				for (int ii=0;ii<availBuffers;++ii) {
+					// Push the recovered buffers back on the queue
+					bufferQueue.push_back(buffHolder[ii]);
+				}
+			}
+			// Poll for captured audio
+			alcGetIntegerv(inputDevice,ALC_CAPTURE_SAMPLES,1,&samplesIn);
+			if (samplesIn>CAP_SIZE) {
+				// Grab the sound
+				alcCaptureSamples(inputDevice,buffer,CAP_SIZE);
+
+				//***** Process/filter captured data here *****//
+				//for (int ii=0;ii<CAP_SIZE;++ii) {
+				//  buffer[ii]*=0.1; // Make it quieter
+				//}
+
+				// Stuff the captured data in a buffer-object
+				if (!bufferQueue.empty()) { // We just drop the data if no buffers are available
+					myBuff = bufferQueue.front(); bufferQueue.pop_front();
+					alBufferData(myBuff,AL_FORMAT_MONO16,buffer,CAP_SIZE*sizeof(short),FREQ);
+
+					// Queue the buffer
+					alSourceQueueBuffers(helloSource[0],1,&myBuff);
+
+					// Restart the source if needed
+					// (if we take too long and the queue dries up,
+					//  the source stops playing).
+					ALint sState=0;
+					alGetSourcei(helloSource[0],AL_SOURCE_STATE,&sState);
+					if (sState!=AL_PLAYING) {
+						alSourcePlay(helloSource[0]);
+					}
+				}
+			}
+		}
+		// Stop capture
+		alcCaptureStop(inputDevice);
+		alcCaptureCloseDevice(inputDevice);
+
+		// Stop the sources
+		alSourceStopv(1,&helloSource[0]);
+		for (int ii=0;ii<1;++ii) {
+			alSourcei(helloSource[ii],AL_BUFFER,0);
+		}
+		// Clean-up 
+		alDeleteSources(1,&helloSource[0]); 
+		alDeleteBuffers(16,&helloBuffer[0]);
+		errorCode = alGetError();
+		alcMakeContextCurrent(NULL);
+		errorCode = alGetError();
+		alcDestroyContext(audioContext);
+		alcCloseDevice(audioDevice);
+
+		return 0;
+	}
+	</code></pre>
 </ul>
 </details>
 
