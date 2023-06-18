@@ -55,8 +55,8 @@
 	<li><a href="#modern-opengl-context-pt1">LESSON 46 - Setting up a modern OpenGL context pt. 1</a></li>
 	<li><a href="#modern-opengl-context-pt2">LESSON 47 - Setting up a modern OpenGL context pt. 2</a></li>
 	<li><a href="#modern-opengl-context-pt3">LESSON 48 - Setting up a modern OpenGL context pt. 3 (shaders)</a></li>
-	<li></li>
-	<li></li>
+	<li><a href="#modern-opengl-context-pt4">LESSON 49 - Setting up a modern OpenGL context pt. 4</a></li>
+	<li><a href="#modern-opengl-context-pt5">LESSON 48 - Setting up a modern OpenGL context pt. 5</a></li>
 	<li></li>
 	<li></li>
 	<li></li>
@@ -8945,7 +8945,7 @@ void toggle_fullscreen(void)
 
 
 
-<h1><a name="modern-opengl-context-pt4">LESSON 49 - </a></h1>
+<h1><a name="modern-opengl-context-pt4">LESSON 49 - Setting up a modern OpenGL context pt. 4</a></h1>
 <h3>Introduction</h3>
 <p>include vmath, change main.c to main.cpp, </p>
 <p></p>
@@ -9319,6 +9319,442 @@ void toggle_fullscreen(void)
 </details>
 
 
+
+
+
+<h1><a name="modern-opengl-context-pt5">LESSON 50 - Setting up modern openGL context - pt 5</a></h1>
+<h3>Introduction</h3>
+<p>GFX pippeline(Verts, Normals, Tex) &rarr; VS &rarr; FS</p>
+<p>There are two places you can send the data. First one is attributes (They are data that cant be changes, eg. drawdata (rawdata = attr)) You pass this as the pipeline is initialized.</p>
+<p>The second on is the uniforms (passed on runtime, eg Color of the geo (in a shader)). </p>
+<pre><code>
+</code></pre>
+VERTEX SHADER
+
+in vec4 vPos;
+in vec2 vTex;
+in vec3 vNormal;
+
+void main()
+{
+	// write the logic to convert raw data accordingly
+}
+<pre><code>
+</code></pre>
+
+<p>You are binding (creating a pipe) between the CPU and GPU by sharing the memaddr (pointer). (Add the GL calls you need to set things up)</p>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+#include <windows.h>
+// LESSON 46
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "vmath.h"
+#pragma comment(lib, "opengl32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+// using namespace vmath;
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+// LESSON 48
+GLuint shader_program_obj;
+
+// LESSON 49
+enum {
+	POSITION = 0,
+};
+GLuint vao_triangle;
+GLuint vbo_position_triangle;
+GLuint mvp_uniform;
+vmath::mat4 perspective_projection_matrix;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-OpenGL-App");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+	
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	// SetWindowTextA(g_hwnd, glGetString(GL_VERSION));
+
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	// LESSON 49 ()
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450 core" \
+		"\n" \
+		"in vec4 vpos;" \
+		"uniform mat4 mvp_matrix;" \
+		"void main()" \
+		"{" \
+		"	gl_Position = mvp_matrix * vpos;" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+
+	// LESSON 49 (core tells ogl to use the core (latest shader vers vs legacy))
+	// Emitting a blue color to whatever the vert has passed
+	const GLchar* fragment_shader = "#version 450 core" \
+		"\n" \
+		"out vec4 fragColor;" \
+		"void main()" \
+		"{" \
+		"	fragColor = vec4(0.0, 0.0, 1.0, 1.0);" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	// LESSON 49
+	glBindAttribLocation(shader_program_obj, POSITION, "vpos");
+
+	glLinkProgram(shader_program_obj);
+
+	// LESSON 49
+	mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+
+	// LESSON 49
+	const GLfloat triangleVertices[] =
+	{
+		// Perspective triangle (Front face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f,  1.0f,     // Right bottom
+		// Perspective triangle (Right face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f, -1.0f,     // Right bottom
+		// Perspective triangle (Back face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f, -1.0f,     // Left bottom
+	   -1.0f, -1.0f, -1.0f,		// Right bottom
+		// Perspective triangle (Left face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f, -1.0f,		// Left bottom
+	   -1.0f, -1.0f,  1.0f
+	};
+
+	// Creating a memlocation on the CPU storing the GPU mem addr in the variable
+	glGenVertexArrays(1, &vao_triangle);	
+	// Bind this instance to a state
+	glBindVertexArray(vao_triangle);
+	// Creating a subbuffer 
+	glGenBuffers(1, &vbo_position_triangle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	// First param: pointer to a datatype, second is size of data, 3rd: what data is sent, 4th: draw command
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	// Once a buffer has been created -> take this position data and 2nd: vert shaders -> 3 parts each time, 3rd: data type of the data 4th: no ratation, 5th: TBA 6th: TBA 
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	// Push the data from the CPU to the GPU (via it's pointer)
+	glEnableVertexAttribArray(POSITION);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 50 homework
+	shader_program_obj = glCreateProgram();
+
+	resize(800, 600);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	// LESSON 49
+	perspective_projection_matrix = vmath::perspective(45.0f, (GLfloat)w / (GLfloat)h, 1.0f, 100.0f );
+}
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// LESSON 49
+	glUseProgram(shader_program_obj);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+		
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+
+
+	// glDeleteShader(vertex_shader);
+	// glDeleteShader(fragment_shader);
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+</details>
+
+
+
+<h1><a name="modern-opengl-context-pt5">LESSON 51 - </a></h1>
+<h3>Introduction</h3>
+<p></p>
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+
+</code></pre>
+</details>
+
+
+
+
+
+<h1><a name="modern-opengl-context-pt5">LESSON 52 - </a></h1>
+<h3>Introduction</h3>
+<p></p>
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<p></p>
+
+<pre><code>
+</code></pre>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+
+</code></pre>
+</details>
 
 <details>
 <summary>Appendix and Notes</summary>
@@ -9829,7 +10265,7 @@ glewInit();
 	<li>Fast Fluid Simulation on the GPU: <a href="https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu" target="_blank">https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu</a></li>
 	<li>Awesome win32 window tutorial: <a href="https://www.codementor.io/@malortie/build-win32-api-app-windows-messages-c-cpp-visual-studio-du107sbya" target="_blank">https://www.codementor.io/@malortie/build-win32-api-app-windows-messages-c-cpp-visual-studio-du107sbya</a></li>
 	<li>Awesome win32 resource tutorial: <a href="https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4" target="_blank"></a>https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4</li>
-	<li><a href="" target="_blank"></a></li>
+	<li>Line rendering deep overview: <a href="https://panthavma.com/articles/lines/deep-overview-extraction/" target="_blank">https://panthavma.com/articles/lines/deep-overview-extraction/</a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
