@@ -10761,7 +10761,9 @@ int initialize()
 
 	// LESSON 51
 	const GLfloat triangleColor[] = {
-		1.0f, 0.0f, 0.0f
+		1.0f, 0.0f, 0.0f, 
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f
 	};
 
 	// LESSON 49
@@ -10956,9 +10958,8 @@ void toggle_fullscreen(void)
 #pragma comment(lib, "opengl32.lib")
 // LESSON 46
 #pragma comment(lib, "glew32.lib")
-#pragma comment(linker, "/subsystem:windows" /*/entry:mainCRTStartup*/)
+#pragma comment(linker, "/subsystem:windows")
 // using namespace vmath;
-
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 int initialize(void);
@@ -10994,7 +10995,7 @@ GLuint vbo_triangle_color;
 vmath::mat4 perspective_projection_matrix;
 // LESSON 54
 GLuint vao_square;
-GLuint vbo_postition_square;
+GLuint vbo_position_square;
 GLuint vbo_square_color;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
@@ -11252,8 +11253,8 @@ int initialize()
 	// LESSON 54
 	glGenVertexArrays(1, &vao_square);
 	glBindVertexArray(vao_square);
-	glGenBuffers(1, &vbo_postition_square);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_postition_square);
+	glGenBuffers(1, &vbo_position_square);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_square);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(POSITION);
@@ -11427,21 +11428,558 @@ void toggle_fullscreen(void)
 
 <h1><a name="modern-opengl-context-pt10">LESSON 55 - Setting up modern openGL context - pt 10</a></h1>
 <h3>Introduction</h3>
-<p></p>
-<p></p>
-
-<pre><code>
-</code></pre>
-
-<p></p>
-
-<pre><code>
-</code></pre>
+<p>Continuation of previous lessons by adding 3D objects and adding colors to each side.</p>
 
 <details>
 <summary>Code sample:</summary> 
 <pre><code>
+#ifdef _WIN32
+#include &lt;windows.h&gt;
+#endif
+// LESSON 46
+#include &lt;GL/glew.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#include "vmath.h"
+#pragma comment(lib, "opengl32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows")
+// using namespace vmath;
 
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+// LESSON 48
+GLuint shader_program_obj;
+// LESSON 49
+enum {
+	POSITION = 0,
+	// LESSON 51
+	COLOR = 1,
+};
+GLuint vao_triangle;
+GLuint vbo_position_triangle;
+GLuint mvp_uniform;
+// LESSON 51
+GLuint vbo_triangle_color;
+vmath::mat4 perspective_projection_matrix;
+// LESSON 54
+GLuint vao_square;
+GLuint vbo_position_square;
+GLuint vbo_square_color;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-OpenGL-App");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	// Setting up the vertex shader
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450 core" \
+		"\n" \
+		"in vec3 vpos;" \
+		"in vec3 color;" \
+		"out vec3 outColor;" \
+		"uniform mat4 mvp_matrix;" \
+		"void main()" \
+		"{" \
+		"	gl_Position = mvp_matrix * vec4(vpos, 1.0f);" \
+		"   outColor = color;" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+	// LESSON 49 (core tells ogl to use the core (latest shader vers vs legacy))
+	// Emitting a blue color to whatever the vert has passed
+	const GLchar* fragment_shader = "#version 450 core" \
+		"\n" \
+		"" \
+		"in vec3 outColor;" \
+		"out vec4 fragColor;" \
+		"void main()" \
+		"{" \
+		"	fragColor = vec4(outColor, 1.0);" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	// LESSON 49
+	glBindAttribLocation(shader_program_obj, POSITION, "vpos");
+	// LESSON 51
+	glBindAttribLocation(shader_program_obj, COLOR, "color");
+
+	glLinkProgram(shader_program_obj);
+
+	// LESSON 49
+	mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+
+	// LESSON 51
+	const GLfloat triangleColor[] = {
+		1.0f, 0.0f, 0.0f, 
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		// LESSON 55
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f
+	};
+
+	// LESSON 54
+	const GLfloat squareColor[] = {
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,
+		// LESSON 55
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f
+	};
+
+	//// LESSON 49
+	const GLfloat triangleVertices[] = {
+		// Perspective triangle (Front face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f,  1.0f,     // Right bottom
+		// Perspective triangle (Right face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f, -1.0f,     // Right bottom
+		// Perspective triangle (Back face)
+		0.0f,  1.0f,  0.0f,     // Apex
+		1.0f, -1.0f, -1.0f,     // Left bottom
+	   -1.0f, -1.0f, -1.0f,		// Right bottom
+		// Perspective triangle (Left face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f, -1.0f,		// Left bottom
+	   -1.0f, -1.0f,  1.0f
+	};
+
+	// LESSON 54
+	const GLfloat squareVertices[] = {
+		// LESSON 55
+		// Perspective square (Top face)
+		1.0f, 1.0f, -1.0f,        // Right top
+		-1.0f, 1.0f, -1.0f,     // Left top
+		-1.0f, 1.0f, 1.0f,        // Left bottom
+		1.0f, 1.0f, 1.0f,        // Right bottom
+		// Perspective square (Bottom face)
+		1.0f, -1.0f, -1.0f,        // Right top
+		-1.0f, -1.0f, -1.0f,     // Left top
+		-1.0f, -1.0f, 1.0f,        // Left bottom
+		1.0f, -1.0f, 1.0f,        // Right bottom
+		// Perspective square (Front face)
+		1.0f, 1.0f, 1.0f,        // Right top
+		-1.0f, 1.0f, 1.0f,        // Left top
+		-1.0f, -1.0f, 1.0f,     // Left bottom
+		1.0f, -1.0f, 1.0f,        // Right bottom
+		// Perspective square (Back face)
+		1.0f, 1.0f, -1.0f,        // Right top
+		-1.0f, 1.0f, -1.0f,        // Left top
+		-1.0f, -1.0f, -1.0f,     // Left bottom
+		1.0f, -1.0f, -1.0f,        // Right bottom
+		// Perspective square (Right face)
+		1.0f, 1.0f, -1.0f,        // Right top
+		1.0f, 1.0f, 1.0f,        // Left top
+		1.0f, -1.0f, 1.0f,         // Left bottom
+		1.0f, -1.0f, -1.0f,        // Right bottom
+		// Perspective square (Left face)
+		-1.0f, 1.0f, 1.0f,        // Right top
+		-1.0f, 1.0f, -1.0f,        // Left top
+		-1.0f, -1.0f, -1.0f,     // Left bottom
+		-1.0f, -1.0f, 1.0f        // Right bottom
+	};
+	
+	//// Creating a memlocation on the CPU storing the GPU mem addr in the variable
+	//glGenVertexArrays(1, &vao_triangle);	
+	//// Bind this instance to a state
+	//glBindVertexArray(vao_triangle);
+	//// Creating a subbuffer 
+	//glGenBuffers(1, &vbo_position_triangle);
+	//glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	//// First param: pointer to a datatype, second is size of data, 3rd: what data is sent, 4th: draw command
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	//// Once a buffer has been created -> take this position data and 2nd: vert shaders -> 3 parts each time, 3rd: data type of the data 4th: no ratation, 5th: TBA 6th: TBA 
+	//glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);	
+	//// Push the data from the CPU to the GPU (via it's pointer)
+	//glEnableVertexAttribArray(POSITION);
+
+	// LESSON 51
+	// glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 54
+	glGenVertexArrays(1, &vao_square);
+	glBindVertexArray(vao_square);
+	glGenBuffers(1, &vbo_position_square);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_square);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(POSITION);
+	
+	glGenBuffers(1, &vbo_square_color);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_square_color);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(squareColor), squareColor, GL_STATIC_DRAW);
+	glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(COLOR);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// LESSON 54
+	glGenVertexArrays(1, &vao_triangle);
+	glBindVertexArray(vao_triangle);
+	glGenBuffers(1, &vbo_position_triangle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(POSITION);
+	glGenBuffers(1, &vbo_triangle_color);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_triangle_color);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleColor), triangleColor, GL_STATIC_DRAW);
+	glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(COLOR);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 52
+	perspective_projection_matrix = vmath::mat4::identity();
+
+	resize(800, 600);
+
+	// LESSON 55
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	// LESSON 49
+	perspective_projection_matrix = vmath::perspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	// LESSON 55
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// LESSON 49
+	glUseProgram(shader_program_obj);
+
+	// LESSON 52
+	vmath::mat4 modelviewmatrix;
+	vmath::mat4 modelviewprojection;
+	static GLfloat angle = 0.0f;
+	
+	modelviewmatrix = vmath::mat4::identity();
+	modelviewprojection = vmath::mat4::identity();
+	modelviewmatrix = vmath::translate(-1.0f, 0.0f, -3.0f);
+	modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+	modelviewmatrix *= vmath::rotate(angle, 1.0f, 0.0f, 0.0f);
+	modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+	glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+	// LESSON 54
+	glBindVertexArray(vao_triangle);
+
+	// LESSON 55
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 3*4);
+
+	// LESSON 54
+	glBindVertexArray(0);
+
+	// LESSON 53
+	modelviewmatrix = vmath::mat4::identity();
+	modelviewprojection = vmath::mat4::identity();
+	modelviewmatrix = vmath::translate(1.0f, 0.0f, -3.0f);
+	modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+	modelviewmatrix *= vmath::rotate(angle, 0.0f, 1.0f, 0.0f);
+	modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+	glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+	glBindVertexArray(vao_square);
+
+	// LESSON 55 (This renders each side of the square individually)
+	//glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 4, 4);		// Second param is the stride, third is amount of vertices (MAX = 4)
+	//glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
+
+	// LESSON 55 (drawing a cude in one)
+	for (int i = 0; i &lt; 21; i = i + 4)
+		glDrawArrays(GL_TRIANGLE_FAN, i, 4);
+
+	// LESSON 54
+	glBindVertexArray(0);
+
+	angle += 0.05f;
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+
+
+	// glDeleteShader(vertex_shader);
+	// glDeleteShader(fragment_shader);
+	// glDeleteBuffers();
+
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
 </code></pre>
 </details>
 
@@ -11467,6 +12005,9 @@ void toggle_fullscreen(void)
 
 </code></pre>
 </details>
+
+
+
 
 
 
