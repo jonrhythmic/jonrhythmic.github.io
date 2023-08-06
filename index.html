@@ -62,6 +62,7 @@
 	<li><a href="#modern-opengl-context-pt8">LESSON 53 - Setting up a modern OpenGL context pt. 8</a></li>
 	<li><a href="#modern-opengl-context-pt9">LESSON 54 - Setting up a modern OpenGL context pt. 9</a></li>
 	<li><a href="#modern-opengl-context-pt10">LESSON 55 - Setting up a modern OpenGL context pt. 10</a></li>
+	<li><a href="#modern-opengl-context-pt11">LESSON 56 - Setting up modern openGL context - pt 11</a></li>
 	<li></li>
 	<li></li>
 	<li></li>
@@ -11989,6 +11990,613 @@ void toggle_fullscreen(void)
 
 <h1><a name="modern-opengl-context-pt11">LESSON 56 - Setting up modern openGL context - pt 11</a></h1>
 <h3>Introduction</h3>
+<p>There are two types to pass the data to GPU - as we seen attr, the other the uniforms. Attr can onl be sent once, uniforms can be sent on the fly (in display).</p>
+<p>Attr are static and uniforms are at ay frame. Uniforms are accessable to all shaders. </p>
+
+<p id="note">Always remember to bind the attributes before linking the program, uniforms after!</p>
+
+<pre><code>
+// Attributes
+glBindAttribLocation(shader_program_obj, POSITION, "vpos");
+glBindAttribLocation(shader_program_obj, COLOR, "color");
+// Linking program
+glLinkProgram(shader_program_obj);
+// Uniforms
+mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+</code></pre>
+
+<p>You can rebind uniforms before each object to change the value.</p>
+
+<p id="note">WM_CHAR doesn't work with the numpad keys, so change the type to WM_KEYDOWN</p>
+<p id="note">If you want to pass something to the GPU dynamically use the uniforms!</p>
+
+<details>
+<summary>Code sample:</summary> 
+<pre><code>
+#ifdef _WIN32
+#include &lt;windows.h&gt;
+#endif
+// LESSON 46
+#include &lt;GL/glew.h&gt;
+#include &lt;GL/gl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#include "vmath.h"
+#pragma comment(lib, "opengl32.lib")
+// LESSON 46
+#pragma comment(lib, "glew32.lib")
+#pragma comment(linker, "/subsystem:windows")
+// using namespace vmath;
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+int initialize(void);
+void resize(int, int);
+void display(void);
+void uninitialize(void);
+void toggle_fullscreen(void);
+
+HWND g_hwnd;
+HDC g_hdc = NULL;
+HGLRC g_hrc = NULL;
+DWORD dwStyle;
+HMONITOR hMonitor;
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };
+bool bIsMonitorInfo;
+bool bIsWindowPlacement;
+bool bIsRunning = true;
+bool bIsFullscreen = false;
+
+// LESSON 48
+GLuint shader_program_obj;
+// LESSON 49
+enum {
+	POSITION = 0,
+	// LESSON 51
+	COLOR = 1,
+};
+GLuint vao_triangle;
+GLuint vbo_position_triangle;
+GLuint mvp_uniform;
+// LESSON 51
+GLuint vbo_triangle_color;
+vmath::mat4 perspective_projection_matrix;
+// LESSON 54
+GLuint vao_square;
+GLuint vbo_position_square;
+GLuint vbo_square_color;
+// LESSon 56 
+GLuint color_uniform;
+int color_type = 0;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
+{
+	// Window dimensions
+	int sWindowWidth = 800;
+	int sWindowHeight = 600;
+	int x = 0;
+	int y = 0;
+	int monitorHalfWidth = 0;
+	int monitorHalfHeight = 0;
+
+	int monitorWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+	int monitorHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+	// Centering the starting point
+	monitorHalfWidth = monitorWidth / 2;
+	monitorHalfHeight = monitorHeight / 2;
+	// Starting point
+	x = monitorHalfWidth - sWindowWidth / 2;
+	y = monitorHalfHeight - sWindowHeight / 2;
+
+	WNDCLASSEX wndclass;
+	HWND hwnd;
+	MSG msg;
+	TCHAR szAppName[] = TEXT("Win32-API-OpenGL-App");
+	wndclass.cbSize = sizeof(WNDCLASSEX);
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;
+	wndclass.cbClsExtra = 0;
+	wndclass.cbWndExtra = 0;
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndclass.lpszClassName = szAppName;
+	wndclass.lpszMenuName = NULL;
+	wndclass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wndclass.lpfnWndProc = WndProc;
+	wndclass.hInstance = hInstance;
+
+	RegisterClassEx(&wndclass);
+
+	hwnd = CreateWindow(
+		szAppName,
+		TEXT("Win32-API-SDK"),
+		WS_OVERLAPPEDWINDOW,
+		x,
+		y,
+		sWindowWidth,
+		sWindowHeight,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	ShowWindow(hwnd, SW_NORMAL);
+
+	g_hwnd = hwnd;
+	int result = initialize();
+
+	while (bIsRunning == true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				bIsRunning = false;
+			}
+			else {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else {
+			display();
+		}
+	}
+
+	return ((int)msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_CHAR:
+		switch (wParam)
+		{
+		case 'f':
+		case 'F':
+			toggle_fullscreen();
+			break;
+		}
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		// LESSON 56
+		case VK_NUMPAD0:
+			color_type = 0;
+			break;
+		case VK_NUMPAD1:
+			color_type = 1;
+			break;
+		case VK_NUMPAD2:
+			color_type = 2;
+			break;
+		case VK_NUMPAD3:
+			color_type = 3;
+			break;
+		case VK_NUMPAD4:
+			color_type = 4;
+			break;
+		case VK_NUMPAD5:
+			color_type = 5;
+			break;
+		// NUMPAD6 and case 'f' have the same ASCII value
+		/*case VK_NUMPAD6:
+			color_type = 6;
+			break;*/
+		case VK_NUMPAD7:
+			color_type = 7;
+			break;
+		case VK_NUMPAD8:
+			color_type = 8;
+			break;
+		case VK_NUMPAD9:
+			color_type = 9;
+			break;
+		}
+		break;
+	case WM_SIZE:
+		resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		uninitialize();
+		PostQuitMessage(0);
+		break;
+	}
+
+	return (DefWindowProc(hwnd, uMsg, wParam, lParam));
+}
+
+int initialize()
+{
+	PIXELFORMATDESCRIPTOR pfd;
+	int iPixelFormatIndex;
+	ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cRedBits = 8;
+	pfd.cGreenBits = 8;
+	pfd.cBlueBits = 8;
+	pfd.cAlphaBits = 8;
+
+	g_hdc = GetDC(g_hwnd);
+
+	iPixelFormatIndex = ChoosePixelFormat(g_hdc, &pfd);
+	if (iPixelFormatIndex == 0) {
+		return -1;
+	}
+
+	if (SetPixelFormat(g_hdc, iPixelFormatIndex, &pfd) == FALSE) {
+		return -2;
+	}
+
+	g_hrc = wglCreateContext(g_hdc);
+	if (g_hrc == NULL) {
+		return -3;
+	}
+
+	if (wglMakeCurrent(g_hdc, g_hrc) == FALSE) {
+		return -4;
+	}
+
+	// LESSON 46
+	GLenum result = glewInit();
+	if (result != GLEW_OK) {
+		return -5;
+	}
+
+	// LESSON 48 (You can write multiple vs and fs shaders)
+	// Setting up the vertex shader
+	GLuint vertex_shader_obj = glCreateShader(GL_VERTEX_SHADER);					// Give the pointer to the vertex shader obj (this will create the shader)
+	const GLchar* vertex_shader = "#version 450 core" \
+		"\n" \
+		"in vec3 vpos;" \
+		"in vec3 color;" \
+		"out vec3 outColor;" \
+		"uniform mat4 mvp_matrix;" \
+		"void main()" \
+		"{" \
+		"	gl_Position = mvp_matrix * vec4(vpos, 1.0f);" \
+		"   outColor = color;" \
+		"}";
+
+	glShaderSource(vertex_shader_obj, 1, (const GLchar**)&vertex_shader, NULL);		// This will take the vert shader and fill the shader in the vs into the vs obj (sec param is nr of shaders to compile) (4th is amount of lines to compile from top)
+	glCompileShader(vertex_shader_obj);
+
+	// Setting up fragment shader
+	GLuint fragment_shader_obj = glCreateShader(GL_FRAGMENT_SHADER);
+	// LESSON 49 (core tells ogl to use the core (latest shader vers vs legacy))
+	// Emitting a blue color to whatever the vert has passed
+	const GLchar* fragment_shader = "#version 450 core" \
+		"\n" \
+		"" \
+		"in vec3 outColor;" \
+		"out vec4 fragColor;" \
+		"uniform vec3 color;"
+		"void main()" \
+		"{" \
+		"	fragColor = vec4(color, 1.0);" \
+		"}";
+
+	glShaderSource(fragment_shader_obj, 1, (const GLchar**)&fragment_shader, NULL);
+	glCompileShader(fragment_shader_obj);
+
+	shader_program_obj = glCreateProgram();
+	glAttachShader(shader_program_obj, vertex_shader_obj);
+	glAttachShader(shader_program_obj, fragment_shader_obj);
+
+	// LESSON 49
+	glBindAttribLocation(shader_program_obj, POSITION, "vpos");
+	// LESSON 51
+	glBindAttribLocation(shader_program_obj, COLOR, "color");
+
+	glLinkProgram(shader_program_obj);
+
+	// LESSON 49
+	mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+	// LESSON 56
+	color_uniform = glGetUniformLocation(shader_program_obj, "color");
+
+	// LESSON 51
+	const GLfloat triangleColor[] = {
+		1.0f, 0.0f, 0.0f, 
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f
+	};
+
+	// LESSON 54
+	const GLfloat squareColor[] = {
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f
+	};
+
+	//// LESSON 49
+	const GLfloat triangleVertices[] = {
+		// Perspective triangle (Front face)
+		0.0f,  1.0f,  0.0f,     // Apex
+	   -1.0f, -1.0f,  1.0f,     // Left bottom
+		1.0f, -1.0f,  1.0f
+	};
+
+	// LESSON 54
+	const GLfloat squareVertices[] = {
+		// Perspective square (Front face)
+		1.0f, 1.0f, 1.0f,        // Right top
+		-1.0f, 1.0f, 1.0f,        // Left top
+		-1.0f, -1.0f, 1.0f,     // Left bottom
+		1.0f, -1.0f, 1.0f
+	};
+	
+	//// Creating a memlocation on the CPU storing the GPU mem addr in the variable
+	//glGenVertexArrays(1, &vao_triangle);	
+	//// Bind this instance to a state
+	//glBindVertexArray(vao_triangle);
+	//// Creating a subbuffer 
+	//glGenBuffers(1, &vbo_position_triangle);
+	//glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	//// First param: pointer to a datatype, second is size of data, 3rd: what data is sent, 4th: draw command
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	//// Once a buffer has been created -> take this position data and 2nd: vert shaders -> 3 parts each time, 3rd: data type of the data 4th: no ratation, 5th: TBA 6th: TBA 
+	//glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);	
+	//// Push the data from the CPU to the GPU (via it's pointer)
+	//glEnableVertexAttribArray(POSITION);
+
+	// LESSON 51
+	// glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 54
+	glGenVertexArrays(1, &vao_square);
+	glBindVertexArray(vao_square);
+	glGenBuffers(1, &vbo_position_square);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_square);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(POSITION);
+	
+	glGenBuffers(1, &vbo_square_color);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_square_color);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(squareColor), squareColor, GL_STATIC_DRAW);
+	glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(COLOR);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// LESSON 54
+	glGenVertexArrays(1, &vao_triangle);
+	glBindVertexArray(vao_triangle);
+	glGenBuffers(1, &vbo_position_triangle);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_triangle);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(POSITION);
+	glGenBuffers(1, &vbo_triangle_color);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_triangle_color);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleColor), triangleColor, GL_STATIC_DRAW);
+	glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(COLOR);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// LESSON 52
+	perspective_projection_matrix = vmath::mat4::identity();
+
+	resize(800, 600);
+
+	// LESSON 55
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	return 0;
+}
+
+void resize(int w, int h)
+{
+	if (h == 0)
+		h = 1;
+
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	// LESSON 49
+	perspective_projection_matrix = vmath::perspective(45.0f, (GLfloat)w / (GLfloat)h, 0.1f, 100.0f);
+}
+
+void display(void)
+{
+	// LESSON 55
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// LESSON 49
+	glUseProgram(shader_program_obj);
+
+	// LESSON 52
+	vmath::mat4 modelviewmatrix;
+	vmath::mat4 modelviewprojection;
+	static GLfloat angle = 0.0f;
+	
+	modelviewmatrix = vmath::mat4::identity();
+	modelviewprojection = vmath::mat4::identity();
+	modelviewmatrix = vmath::translate(-1.0f, 0.0f, -3.0f);
+	modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+	modelviewmatrix *= vmath::rotate(angle, 1.0f, 0.0f, 0.0f);
+	modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+	glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+	// LESSON 56
+	if (color_type == 0) {
+		glUniform3f(color_uniform, 1.0f, 0.0f, 0.0f);
+	}
+	else if (color_type == 1) {
+		glUniform3f(color_uniform, 0.0f, 1.0f, 0.0f);
+	}
+	else if (color_type == 2) {
+		glUniform3f(color_uniform, 0.0f, 0.0f, 1.0f);
+	}
+	else if (color_type == 3) {
+		glUniform3f(color_uniform, 1.0f, 1.0f, 0.0f);
+	}
+	else if (color_type == 4) {
+		glUniform3f(color_uniform, 0.0f, 1.0f, 1.0f);
+	}
+	else if (color_type == 5) {
+		glUniform3f(color_uniform, 1.0f, 0.0f, 1.0f);
+	}
+	else if (color_type == 7) {
+		glUniform3f(color_uniform, 1.0f, 1.0f, 1.0f);
+	}
+	else if (color_type == 8) {
+		glUniform3f(color_uniform, 0.5f, 1.0f, 0.2f);
+	}
+	else if (color_type == 9) {
+		glUniform3f(color_uniform, 1.0f, 0.7f, 4.0f);
+	}
+	// LESSON 54
+	glBindVertexArray(vao_triangle);
+
+	// LESSON 55
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+
+	// LESSON 54
+	glBindVertexArray(0);
+
+	// LESSON 53
+	modelviewmatrix = vmath::mat4::identity();
+	modelviewprojection = vmath::mat4::identity();
+	modelviewmatrix = vmath::translate(1.0f, 0.0f, -3.0f);
+	modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+	modelviewmatrix *= vmath::rotate(angle, 0.0f, 1.0f, 0.0f);
+	modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+	glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+	// LESSON 56
+	if (color_type == 0) {
+		glUniform3f(color_uniform, 1.0f, 0.0f, 0.0f);
+	}
+	else if (color_type == 1) {
+		glUniform3f(color_uniform, 0.0f, 1.0f, 0.0f);
+	}
+	else if (color_type == 2) {
+		glUniform3f(color_uniform, 0.0f, 0.0f, 1.0f);
+	}
+	else if (color_type == 3) {
+		glUniform3f(color_uniform, 1.0f, 1.0f, 0.0f);
+	}
+	else if (color_type == 4) {
+		glUniform3f(color_uniform, 0.0f, 1.0f, 1.0f);
+	}
+	else if (color_type == 5) {
+		glUniform3f(color_uniform, 1.0f, 0.0f, 1.0f);
+	}
+	else if (color_type == 7) {
+		glUniform3f(color_uniform, 1.0f, 1.0f, 1.0f);
+	}
+	else if (color_type == 8) {
+		glUniform3f(color_uniform, 0.5f, 1.0f, 0.2f);
+	}
+	else if (color_type == 9) {
+		glUniform3f(color_uniform, 1.0f, 0.7f, 4.0f);
+	}
+	glBindVertexArray(vao_square);
+
+	// LESSON 55 (This renders each side of the square individually)
+	//glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 4, 4);		// Second param is the stride, third is amount of vertices (MAX = 4)
+	//glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
+	//glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
+
+	// LESSON 55 (drawing a cude in one)
+	for (int i = 0; i < 21; i = i + 4)
+		glDrawArrays(GL_TRIANGLE_FAN, i, 4);
+
+	// LESSON 54
+	glBindVertexArray(0);
+
+	angle += 0.05f;
+
+	SwapBuffers(g_hdc);
+}
+
+void uninitialize(void)
+{
+	if (bIsFullscreen == true)
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+	}
+
+	if (wglGetCurrentContext() == g_hrc) {
+		wglMakeCurrent(NULL, NULL);
+	}
+
+	if (g_hrc) {
+		wglDeleteContext(g_hrc);
+		g_hrc = NULL;
+	}
+
+	if (g_hdc) {
+		ReleaseDC(g_hwnd, g_hdc);
+		g_hdc = NULL;
+	}
+
+
+	// glDeleteShader(vertex_shader);
+	// glDeleteShader(fragment_shader);
+	// glDeleteBuffers();
+
+}
+
+void toggle_fullscreen(void)
+{
+	MONITORINFO mi;
+
+	if (bIsFullscreen == false) {
+		mi.cbSize = sizeof(MONITORINFO);
+
+		dwStyle = GetWindowLong(g_hwnd, GWL_STYLE);
+
+		if (dwStyle & WS_OVERLAPPEDWINDOW) {
+			bIsWindowPlacement = GetWindowPlacement(g_hwnd, &wpPrev);
+			hMonitor = MonitorFromWindow(g_hwnd, MONITORINFOF_PRIMARY);
+			bIsMonitorInfo = GetMonitorInfo(hMonitor, &mi);
+
+			if (bIsWindowPlacement == true && bIsMonitorInfo == true) {
+				SetWindowLong(g_hwnd, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+				SetWindowPos(g_hwnd, HWND_TOP,
+					mi.rcMonitor.left,
+					mi.rcMonitor.top,
+					mi.rcMonitor.right - mi.rcMonitor.left,
+					mi.rcMonitor.bottom - mi.rcMonitor.top,
+					SWP_NOZORDER | SWP_FRAMECHANGED);
+			}
+		}
+		ShowCursor(FALSE);
+		bIsFullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(g_hwnd, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+		SetWindowPlacement(g_hwnd, &wpPrev);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER);
+		ShowCursor(TRUE);
+		bIsFullscreen = false;
+	}
+}
+</code></pre>
+</details>
+
+
+
+
+<h1><a name="modern-opengl-context-pt12">LESSON 56 - Setting up modern openGL context - pt 12</a></h1>
+<h3>Introduction</h3>
 <p></p>
 <p></p>
 
@@ -12006,11 +12614,6 @@ void toggle_fullscreen(void)
 
 </code></pre>
 </details>
-
-
-
-
-
 
 <details>
 <summary>Appendix and Notes</summary>
@@ -12523,7 +13126,7 @@ glewInit();
 	<li>Awesome win32 resource tutorial: <a href="https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4" target="_blank"></a>https://www.codementor.io/@malortie/win32-app-load-apply-resources-to-window-c-cpp-visual-studio-du107jdb4</li>
 	<li>Line rendering deep overview: <a href="https://panthavma.com/articles/lines/deep-overview-extraction/" target="_blank">https://panthavma.com/articles/lines/deep-overview-extraction/</a></li>
 	<li>Win32 api reference cheatsheet: <a href="https://github.com/snowcra5h/windows-api-function-cheatsheets" target="_blank">https://github.com/snowcra5h/windows-api-function-cheatsheets</a></li>
-	<li><a href="" target="_blank"></a></li>
+	<li>glTF skeletal animation tutorial: <a href="https://lisyarus.github.io/blog/graphics/2023/07/03/gltf-animation.html" target="_blank">https://lisyarus.github.io/blog/graphics/2023/07/03/gltf-animation.html</a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
 	<li><a href="" target="_blank"></a></li>
@@ -13977,6 +14580,92 @@ Of course, I didn't test any of this code, and wrote it now. Hope it works!
 	or where using that mechanic doesn't have the expected outcome for that quest.
 	
 	...
+	</code></pre>
+	<pre><code>
+	<a href="https://www.reddit.com/r/raytracing/comments/155tsky/homemade_raytracer_in_c/">https://www.reddit.com/r/raytracing/comments/155tsky/homemade_raytracer_in_c/</a>
+	harieamjari[S] 6 poeng 3 dager siden* 
+
+	https://github.com/harieamjari/raytracer. Requires no libraries. Outputs an rgba 8 bit-depth pixel. Image can be constructed by piping the output to your desired software:
+
+	./main | ffmpeg -f rawvideo -pix_fmt rgba -s 640x480 -i pipe:0 ray.png -y
+
+	~For some reason, gcc generated executable crashes, but it works on clang with -O0 enabled (linux-x86-64).~ This bug was present in commit https://github.com/harieamjari/raytracer/tree/4410d3e67c1ed52cfa30b6108adc2cd72410eab0. A fix has been committed thanks to /u/skeeto.
+
+	~Written on my phone where this bug doesn't appear on my phone's compiler (aarch64).~
+
+		permalenkeembedlagrerapportergive awardsvar
+
+	[–]skeeto 5 poeng 2 dager siden 
+
+	Nice job, that looks neat!
+
+	You really ought to put function prototypes in headers so that they're consistent between translation units. Otherwise it's easy to mismatch. For instance, the prototype for compute_snormal doesn't match the definition, and before I fixed it, it would simply crash.
+
+	--- a/math.c
+	+++ b/math.c
+	@@ -93,6 +93,6 @@ float magnitude(vec3D v){
+
+	-vec3D compute_snormal(triangle3D *triangle){
+	-  vec3D A = *triangle->vertices[0];
+	-  vec3D B = *triangle->vertices[1];
+	-  vec3D C = *triangle->vertices[2];
+	+vec3D compute_snormal(triangle3D triangle){
+	+  vec3D A = *triangle.vertices[0];
+	+  vec3D B = *triangle.vertices[1];
+	+  vec3D C = *triangle.vertices[2];
+
+	It's trivial to skip the ffmpeg step and use Netpbm as your output format, which is supported by most image viewers. You just need to add a header and drop the alpha channel:
+
+	--- a/main.c
+	+++ b/main.c
+	@@ -162,2 +162,3 @@ int main(int argc, char *argv[]){
+
+	+  printf("P6\n%d %d\n255\n", image_width, image_height);
+	   for (int y = 0; y < image_height; y++)
+	@@ -167,3 +168,2 @@ int main(int argc, char *argv[]){
+		   putchar(img_buf[y][x].b);
+	-      putchar(img_buf[y][x].a);
+
+	rand is okay for quick toy programs, but for anything else it's poor. It has implicit global state, and so is (usually) wrapped in a lock… in the best case. This is a giant contention point that kills multithreaded performance, such as that commented-out OpenMP pragma. It would be better to thread a PRNG state down your call stack with a per-thread state. For example, I added a PRNG parameter to montc_ray, and embedded an LCG:
+
+	--- a/utils.c
+	+++ b/utils.c
+	@@ -44,7 +44,11 @@ uint8_t u8_getb(rgba_t rgba){
+	 // generate monte carlo ray 
+	-vec3D montc_ray(vec3D norm){
+	+vec3D montc_ray(vec3D norm, uint64_t *rng){
+	+  *rng = *rng*0x3243f6a8885a308d + 1;
+	+  uint16_t x = *rng >> 48;
+	+  uint16_t y = *rng >> 32;
+	+  uint16_t z = *rng >> 16;
+	   vec3D randv = normalize((vec3D){
+	-    (float)(1000 - rand()%2000),
+	-    (float)(1000 - rand()%2000),
+	-    (float)(1000 - rand()%2000)
+	+      x/(float)0x8000 - 1,
+	+      y/(float)0x8000 - 1,
+	+      z/(float)0x8000 - 1,
+	   });
+
+	Then threaded that through all call sites, also adding the new parameter to get_pixel and shoot_ray. This required modifying the same prototypes in multiple places due to them not being headers where they belong — the second time that caused issues. I initialized the state in the top-level loop from the loop variable, which, with OpenMP restored, effectively makes it thread-local:
+
+	--- a/main.c
+	+++ b/main.c
+	-//#pragma omp parallel for
+	-  for (int y = 0; y < image_height; y++)
+	+  #pragma omp parallel for
+	+  for (int y = 0; y < image_height; y++) {
+	+    uint64_t rng = y + 1;
+		 for (int x = 0; x < image_width; x++){
+	-      rgba_t rgba = get_pixel(x - (image_width/2), (image_height/2) - y);
+	+      rgba_t rgba = get_pixel(x - (image_width/2), (image_height/2) - y, &rng);
+		   img_buf[y][x].r = (uint8_t)(rgba.r*255.0);
+	@@ -160,2 +160,3 @@ int main(int argc, char *argv[]){
+		 }
+	+  }
+
+	Even just single threaded, using a better PRNG makes it about 25% faster on my system, and even better with lots of threads because it eliminates the aforementioned contention.
+
 	</code></pre>
 	</li>
 	<li>
