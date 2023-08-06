@@ -12000,6 +12000,13 @@ void toggle_fullscreen(void)
 <p id="note">Always remember to bind the attributes before linking the program, uniforms after!</p>
 
 <pre><code>
+...
+GLuint color_uniform;
+int color_type = 0;
+...
+
+initialixe()
+...
 // Attributes
 glBindAttribLocation(shader_program_obj, POSITION, "vpos");
 glBindAttribLocation(shader_program_obj, COLOR, "color");
@@ -12007,6 +12014,47 @@ glBindAttribLocation(shader_program_obj, COLOR, "color");
 glLinkProgram(shader_program_obj);
 // Uniforms
 mvp_uniform = glGetUniformLocation(shader_program_obj, "mvp_matrix");
+color_uniform = glGetUniformLocation(shader_program_obj, "color");
+...
+
+initialize() -&gt; fragment shader:
+const GLchar* fragment_shader = "#version 450 core" \
+		"\n" \
+		"" \
+		"in vec3 outColor;" \
+		"out vec4 fragColor;" \
+		"<b>uniform vec3 color;</b>"
+		"void main()" \
+		"{" \
+		"	fragColor = vec4(<b>color</b>, 1.0);" \
+		"}";
+		
+...
+color_uniform = glGetUniformLocation(shader_program_obj, "color");
+...
+
+display()
+...
+modelviewmatrix = vmath::mat4::identity();
+modelviewprojection = vmath::mat4::identity();
+modelviewmatrix = vmath::translate(-1.0f, 0.0f, -3.0f);
+modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+modelviewmatrix *= vmath::rotate(angle, 1.0f, 0.0f, 0.0f);
+modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+// LESSON 56
+glUniform3f(color_uniform, 1.0f, 0.0f, 0.0f);
+
+modelviewmatrix = vmath::mat4::identity();
+modelviewprojection = vmath::mat4::identity();
+modelviewmatrix = vmath::translate(1.0f, 0.0f, -3.0f);
+modelviewmatrix *= vmath::scale(0.5f, 0.5f, 0.5f);
+modelviewmatrix *= vmath::rotate(angle, 0.0f, 1.0f, 0.0f);
+modelviewprojection = perspective_projection_matrix * modelviewmatrix;
+glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, modelviewprojection);
+// LESSON 56
+glUniform3f(color_uniform, 1.0f, 0.0f, 0.0f);		
+...
 </code></pre>
 
 <p>You can rebind uniforms before each object to change the value.</p>
