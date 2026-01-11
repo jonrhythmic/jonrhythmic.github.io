@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wager.reviews/sitemap.xml
